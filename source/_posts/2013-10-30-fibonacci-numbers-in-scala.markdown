@@ -38,6 +38,8 @@ def fib_iter(n: Int) = {
 
 The first thing to notice about the Fibonacci sequence is that the first two numbers match their indexes. The 0th number is 0, and the 1st number is 1. These form the foundation of later calculations, and is the reason for the if-statement on line 2 of the code snippet.
 
+We can do better though. Fibonacci sequences rely on previous calculations, so are an ideal opportunity to use recursion:
+
 {% codeblock lang:scala %}
 def fib_recur(n: Int): Int = {
   n match {
