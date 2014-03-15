@@ -1,0 +1,366 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Akka Camel and ActiveMQ - cjwebb.github.io</title>
+  <meta name="author" content="Colin Webb">
+
+  
+  <meta name="description" content="I&rsquo;ve been using Akka Camel and ActiveMQ recently, as part of a delayed worker-queue system. Given the lack of good googleable information about &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://cjwebb.github.io/blog/2013/09/01/akka-camel-and-activemq">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="cjwebb.github.io" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-41253515-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">cjwebb.github.io</a></h1>
+  
+    <h2>A software engineer in London</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:cjwebb.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Akka Camel and ActiveMQ</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-09-01T07:00:00+01:00" pubdate data-updated="true">Sep 1<span>st</span>, 2013</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>I&rsquo;ve been using <a href="http://doc.akka.io/docs/akka/snapshot/scala/camel.html" title="Akka Camel">Akka Camel</a> and <a href="http://activemq.apache.org/" title="Active MQ">ActiveMQ</a> recently, as part of a delayed worker-queue system. Given the lack of good googleable information about combining the two, I thought it would be useful if I explained briefly how to get Akka Camel and ActiveMQ to work together in the form of a quick example.</p>
+
+<h2>Producers and Consumers</h2>
+
+<p>Akka Camel uses the concept of producers and consumers, and makes it very easy to link them to ActiveMQ. Let&rsquo;s try publishing a message to an ActiveMQ queue, and then using a consumer to read the messages back.</p>
+
+<p>First, let&rsquo;s implement Producer and Consumer actors. For an actor to produce messages, extend <code>akka.camel.Producer</code> and implement <code>endpointUri</code>. Likewise, to implement an actor to consume messages, extend <code>akka.camel.Consumer</code> and implement the same <code>endpointUri</code>. As the consumer will be receiving messages, you will also need to implement the standard actor <code>receive</code> method.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.actor._</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.camel._</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">SimpleProducer</span><span class="o">()</span> <span class="k">extends</span> <span class="nc">Actor</span> <span class="k">with</span> <span class="nc">Producer</span> <span class="k">with</span> <span class="nc">OneWay</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">endpointUri</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="s">&quot;activemq:foo.bar&quot;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">SimpleConsumer</span><span class="o">()</span> <span class="k">extends</span> <span class="nc">Actor</span> <span class="k">with</span> <span class="nc">Consumer</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">endpointUri</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="s">&quot;activemq:foo.bar&quot;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">receive</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">msg</span><span class="k">:</span> <span class="kt">CamelMessage</span> <span class="o">=&gt;</span> <span class="n">println</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>These actors will communicate using the ActiveMQ queue named &ldquo;foo.bar&rdquo;. The consumer will print any received messages to the console. As this is a publish-subscribe system, we also need to extend our SimpleProducer with the <code>OneWay</code> trait. This tells Camel that our producer won&rsquo;t be participating in any request-reply messaging patterns.</p>
+
+<h2>Setting up Akka Camel</h2>
+
+<p>Now that we have a Producer and a Consumer, we need to wire a CamelExtension into an ActorSystem to tell it how to use ActiveMQ. In this example, ActiveMQ is running on <code>localhost:61616</code>. The component name needs to match the protocol specified in the producer and consumer endpoints.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.actor._</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.camel._</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.apache.activemq.camel.component.ActiveMQComponent</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.apache.activemq.ScheduledMessage._</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">val</span> <span class="n">actorSystem</span> <span class="k">=</span> <span class="nc">ActorSystem</span><span class="o">(</span><span class="s">&quot;CamelTesting&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="k">val</span> <span class="n">system</span> <span class="k">=</span> <span class="nc">CamelExtension</span><span class="o">(</span><span class="n">actorSystem</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">val</span> <span class="n">amqUrl</span> <span class="k">=</span> <span class="n">s</span><span class="s">&quot;nio://localhost:61616&quot;</span>
+</span><span class='line'><span class="n">system</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">addComponent</span><span class="o">(</span><span class="s">&quot;activemq&quot;</span><span class="o">,</span> <span class="nc">ActiveMQComponent</span><span class="o">.</span><span class="n">activeMQComponent</span><span class="o">(</span><span class="n">amqUrl</span><span class="o">))</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// create consumer and producer</span>
+</span><span class='line'><span class="k">val</span> <span class="n">simpleConsumer</span> <span class="k">=</span> <span class="n">actorSystem</span><span class="o">.</span><span class="n">actorOf</span><span class="o">(</span><span class="nc">Props</span><span class="o">[</span><span class="kt">SimpleConsumer</span><span class="o">])</span>
+</span><span class='line'><span class="k">val</span> <span class="n">simpleProducer</span> <span class="k">=</span> <span class="n">actorSystem</span><span class="o">.</span><span class="n">actorOf</span><span class="o">(</span><span class="nc">Props</span><span class="o">[</span><span class="kt">SimpleProducer</span><span class="o">])</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now we have linked Akka to ActiveMQ, let&rsquo;s send messages through it! As our producer is an akka-actor, we can send messages to it just like any other.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(</span><span class="s">&quot;first&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(</span><span class="s">&quot;second&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(</span><span class="s">&quot;third&quot;</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">val</span> <span class="n">delayedMessage</span> <span class="k">=</span> <span class="nc">CamelMessage</span><span class="o">(</span><span class="nc">Message</span><span class="o">(</span><span class="s">&quot;delayed fourth&quot;</span><span class="o">),</span> <span class="nc">Map</span><span class="o">(</span><span class="nc">AMQ_SCHEDULED_DELAY</span> <span class="o">-&gt;</span> <span class="mi">3000</span><span class="o">))</span>
+</span><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="n">delayedMessage</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The fourth messages makes use of ActiveMQ&rsquo;s scheduled delay feature. To do this, we had to send a <code>CamelMessage</code> with modified headers. All available CamelMessage options are available here. Unfortunately, this does leak knowledge of ActiveMQ outside of our SimpleProducer, but introducing a level of indirection would easily solve it.</p>
+
+<h2>Conclusion</h2>
+
+<p>We have sent messages through ActiveMQ using Akka-Camel, all in about 40 lines of code. A working example can be <a href="https://github.com/cjwebb/blog-code/blob/master/akka-camel-and-actimemq/src/main/scala/AkkaCamelAndActiveMQ.scala" title="Github codez">viewed on Github</a>. As it is possible for our actors to hide their implementation from those around them, ActiveMQ can be worked into a system using Akka without much hassle at all.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Colin Webb</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-09-01T07:00:00+01:00" pubdate data-updated="true">Sep 1<span>st</span>, 2013</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/mq/'>mq</a>, <a class='category' href='/blog/categories/scala/'>scala,</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://cjwebb.github.io/blog/2013/09/01/akka-camel-and-activemq/" data-via="colinjameswebb" data-counturl="http://cjwebb.github.io/blog/2013/09/01/akka-camel-and-activemq/" >Tweet</a>
+  
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/07/20/testing-in-scala-with-dsls/" title="Previous Post: Testing in Scala with DSLs">&laquo; Testing in Scala with DSLs</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/10/30/fibonacci-numbers-in-scala/" title="Next Post: Fibonacci Numbers in Scala">Fibonacci Numbers in Scala &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/10/30/fibonacci-numbers-in-scala/">Fibonacci Numbers in Scala</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/01/akka-camel-and-activemq/">Akka Camel and ActiveMQ</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/07/20/testing-in-scala-with-dsls/">Testing in Scala With DSLs</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/05/27/better-assertions-with-scalatest/">Better Assertions With ScalaTest</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <h1>About Me</h1>
+  <p>My name is Colin Webb, and I'm a software engineer, working in London.</p>
+
+  <p>Currently employed to code in Scala, having previously worked with Java, JavaScript and Python</p>
+  <p>You can find me on Twitter <a href="http://twitter.com/colinjameswebb">@colinjameswebb</a>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Colin Webb -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'cjwebbgithubio';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://cjwebb.github.io/blog/2013/09/01/akka-camel-and-activemq/';
+        var disqus_url = 'http://cjwebb.github.io/blog/2013/09/01/akka-camel-and-activemq/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

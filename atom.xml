@@ -1,0 +1,765 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[cjwebb.github.io]]></title>
+  <link href="http://cjwebb.github.io/atom.xml" rel="self"/>
+  <link href="http://cjwebb.github.io/"/>
+  <updated>2014-03-15T15:15:29+00:00</updated>
+  <id>http://cjwebb.github.io/</id>
+  <author>
+    <name><![CDATA[Colin Webb]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Fibonacci Numbers in Scala]]></title>
+    <link href="http://cjwebb.github.io/blog/2013/10/30/fibonacci-numbers-in-scala/"/>
+    <updated>2013-10-30T20:45:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2013/10/30/fibonacci-numbers-in-scala</id>
+    <content type="html"><![CDATA[<p>Working out the <a href="http://en.wikipedia.org/wiki/Fibonacci_number">Fibonacci numbers</a> are a standard exercise when learning a programming language, or just refreshing your knowledge. Below, is a recap of various ways to calculate them in Scala. <a href="https://gist.github.com/cjwebb/7239843">All the code is available in a handy gist</a>.</p>
+
+<p>First, a quick recap of the beginning of the series. If this is unfamiliar to you, please click the first link in this post!</p>
+
+<blockquote><p>0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55</p></blockquote>
+
+<h3>Nth Fibonacci Number</h3>
+
+<blockquote><p>Given a number n, return the corresponding Fibonacci number from the sequence.</p></blockquote>
+
+<p>Lets start off really basically, and use a while loop.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_iter</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="o">)</span> <span class="n">n</span>
+</span><span class='line'>  <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">ans</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">n1</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">n2</span> <span class="k">=</span> <span class="mi">1</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">var</span> <span class="n">i</span> <span class="k">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'>    <span class="k">while</span> <span class="o">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">i</span> <span class="k">=</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'>      <span class="n">ans</span> <span class="k">=</span> <span class="n">n1</span> <span class="o">+</span> <span class="n">n2</span>
+</span><span class='line'>      <span class="n">n1</span> <span class="k">=</span> <span class="n">n2</span>
+</span><span class='line'>      <span class="n">n2</span> <span class="k">=</span> <span class="n">ans</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="n">ans</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The first thing to notice about the Fibonacci sequence is that the first two numbers match their indexes. The 0th number is 0, and the 1st number is 1. These form the foundation of later calculations, and is the reason for the if-statement on line 2 of the code snippet.</p>
+
+<p>We can do better though. Fibonacci sequences rely on previous calculations, so are an ideal opportunity to use recursion:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">n</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">i</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="k">=&gt;</span> <span class="n">i</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">i</span> <span class="k">=&gt;</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">+</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This looks good! Basically only two lines of code, and its fairly easy to follow. However, the keen-eyed amongst you may note that for large values of n, a <code>StackOverflowException</code> may be thrown! To prevent these exceptions when writing recursive code, it is encouraged that we write in a tail-recursive form. <a href="http://blog.richdougherty.com/2009/04/tail-calls-tailrec-and-trampolines.html">The compiler will attempt to optimise the recursion</a>.</p>
+
+<p>Also note that for large n&rsquo;s, we need to use <code>BigInt</code> to avoid integer overflow.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_tailrec</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@tailrec</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">a</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span><span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">n</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">case</span> <span class="mi">0</span> <span class="k">=&gt;</span> <span class="n">b</span>
+</span><span class='line'>      <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="o">,</span> <span class="n">a</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Excellent!</p>
+
+<h3>Fibonacci Series, of length n</h3>
+
+<blockquote><p>Given a number n, return the fibonacci series of length n.</p></blockquote>
+
+<p>This time, instead of returning one number, we want a whole series. Well, we already have a function that returns the nth Fibonacci number, lets just use that!</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">bad_fib</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">0</span> <span class="n">to</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="n">map</span> <span class="o">(</span><span class="n">n</span> <span class="k">=&gt;</span> <span class="n">fib_tailrec</span><span class="o">(</span><span class="n">n</span><span class="o">))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Whilst we should really benchmark this, to see exactly how terrible it is, we will assume that is too inefficient; it forgets all previous calculations when trying to work out the next number.</p>
+
+<p>How else can we do this then? We can use an accumulator:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_acc</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@tailrec</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">acc</span><span class="o">(</span><span class="n">list</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">],</span> <span class="n">i</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">n</span> <span class="o">||</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="o">)</span> <span class="n">list</span>
+</span><span class='line'>    <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">newList</span> <span class="k">=</span> <span class="n">list</span> <span class="o">:::</span> <span class="nc">List</span><span class="o">(</span><span class="n">list</span><span class="o">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="o">)+</span><span class="n">list</span><span class="o">(</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="o">))</span>
+</span><span class='line'>      <span class="n">acc</span><span class="o">(</span><span class="n">newList</span><span class="o">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">acc</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">1</span><span class="o">),</span> <span class="mi">2</span><span class="o">).</span><span class="n">take</span><span class="o">(</span><span class="n">n</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This has a nasty list creation to append the number onto the end of the list. We have to pass around <code>i</code> everywhere.
+Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepending is easy. This is what the cons operator is for! By constructing the list in reverse we can optimise for a linked list, and remove the <code>i</code> value:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_acc2</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">s</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="o">)</span> <span class="n">s</span><span class="o">.</span><span class="n">reverse</span>
+</span><span class='line'>  <span class="k">else</span> <span class="n">fib_acc2</span><span class="o">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="n">s</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">+</span> <span class="n">s</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">::</span> <span class="n">s</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Marvellous. It does get better though. For those of you familiar with <code>Stream</code>, you can do this:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_stream</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">lazy</span> <span class="k">val</span> <span class="n">fibs</span><span class="k">:</span> <span class="kt">Stream</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="mi">0</span> <span class="o">#::</span> <span class="n">fibs</span><span class="o">.</span><span class="n">scanLeft</span><span class="o">(</span><span class="mi">1</span><span class="o">)(</span><span class="k">_</span> <span class="o">+</span> <span class="k">_</span><span class="o">)</span>
+</span><span class='line'>  <span class="n">fibs</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="n">n</span><span class="o">).</span><span class="n">toList</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The crazy <code>#::</code> operator prepends an element to the start of the Stream, and <code>scanLeft</code> works just like <code>foldLeft</code> but returns a Stream. <a href="http://www.scala-lang.org/api/current/index.html#scala.collection.immutable.Stream">The Scaladoc for Stream</a> actually contains a different version of how to calculate a Fibonacci sequence, but I prefer to use <code>scanLeft</code> for its terseness, and the analogy with <code>foldLeft</code>.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Akka Camel and ActiveMQ]]></title>
+    <link href="http://cjwebb.github.io/blog/2013/09/01/akka-camel-and-activemq/"/>
+    <updated>2013-09-01T07:00:00+01:00</updated>
+    <id>http://cjwebb.github.io/blog/2013/09/01/akka-camel-and-activemq</id>
+    <content type="html"><![CDATA[<p>I&rsquo;ve been using <a href="http://doc.akka.io/docs/akka/snapshot/scala/camel.html" title="Akka Camel">Akka Camel</a> and <a href="http://activemq.apache.org/" title="Active MQ">ActiveMQ</a> recently, as part of a delayed worker-queue system. Given the lack of good googleable information about combining the two, I thought it would be useful if I explained briefly how to get Akka Camel and ActiveMQ to work together in the form of a quick example.</p>
+
+<h2>Producers and Consumers</h2>
+
+<p>Akka Camel uses the concept of producers and consumers, and makes it very easy to link them to ActiveMQ. Let&rsquo;s try publishing a message to an ActiveMQ queue, and then using a consumer to read the messages back.</p>
+
+<p>First, let&rsquo;s implement Producer and Consumer actors. For an actor to produce messages, extend <code>akka.camel.Producer</code> and implement <code>endpointUri</code>. Likewise, to implement an actor to consume messages, extend <code>akka.camel.Consumer</code> and implement the same <code>endpointUri</code>. As the consumer will be receiving messages, you will also need to implement the standard actor <code>receive</code> method.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.actor._</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.camel._</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">SimpleProducer</span><span class="o">()</span> <span class="k">extends</span> <span class="nc">Actor</span> <span class="k">with</span> <span class="nc">Producer</span> <span class="k">with</span> <span class="nc">OneWay</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">endpointUri</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="s">&quot;activemq:foo.bar&quot;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">SimpleConsumer</span><span class="o">()</span> <span class="k">extends</span> <span class="nc">Actor</span> <span class="k">with</span> <span class="nc">Consumer</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">endpointUri</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="s">&quot;activemq:foo.bar&quot;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">receive</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">msg</span><span class="k">:</span> <span class="kt">CamelMessage</span> <span class="o">=&gt;</span> <span class="n">println</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>These actors will communicate using the ActiveMQ queue named &ldquo;foo.bar&rdquo;. The consumer will print any received messages to the console. As this is a publish-subscribe system, we also need to extend our SimpleProducer with the <code>OneWay</code> trait. This tells Camel that our producer won&rsquo;t be participating in any request-reply messaging patterns.</p>
+
+<h2>Setting up Akka Camel</h2>
+
+<p>Now that we have a Producer and a Consumer, we need to wire a CamelExtension into an ActorSystem to tell it how to use ActiveMQ. In this example, ActiveMQ is running on <code>localhost:61616</code>. The component name needs to match the protocol specified in the producer and consumer endpoints.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.actor._</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.camel._</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.apache.activemq.camel.component.ActiveMQComponent</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.apache.activemq.ScheduledMessage._</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">val</span> <span class="n">actorSystem</span> <span class="k">=</span> <span class="nc">ActorSystem</span><span class="o">(</span><span class="s">&quot;CamelTesting&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="k">val</span> <span class="n">system</span> <span class="k">=</span> <span class="nc">CamelExtension</span><span class="o">(</span><span class="n">actorSystem</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">val</span> <span class="n">amqUrl</span> <span class="k">=</span> <span class="n">s</span><span class="s">&quot;nio://localhost:61616&quot;</span>
+</span><span class='line'><span class="n">system</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">addComponent</span><span class="o">(</span><span class="s">&quot;activemq&quot;</span><span class="o">,</span> <span class="nc">ActiveMQComponent</span><span class="o">.</span><span class="n">activeMQComponent</span><span class="o">(</span><span class="n">amqUrl</span><span class="o">))</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// create consumer and producer</span>
+</span><span class='line'><span class="k">val</span> <span class="n">simpleConsumer</span> <span class="k">=</span> <span class="n">actorSystem</span><span class="o">.</span><span class="n">actorOf</span><span class="o">(</span><span class="nc">Props</span><span class="o">[</span><span class="kt">SimpleConsumer</span><span class="o">])</span>
+</span><span class='line'><span class="k">val</span> <span class="n">simpleProducer</span> <span class="k">=</span> <span class="n">actorSystem</span><span class="o">.</span><span class="n">actorOf</span><span class="o">(</span><span class="nc">Props</span><span class="o">[</span><span class="kt">SimpleProducer</span><span class="o">])</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now we have linked Akka to ActiveMQ, let&rsquo;s send messages through it! As our producer is an akka-actor, we can send messages to it just like any other.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(</span><span class="s">&quot;first&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(</span><span class="s">&quot;second&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(</span><span class="s">&quot;third&quot;</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">val</span> <span class="n">delayedMessage</span> <span class="k">=</span> <span class="nc">CamelMessage</span><span class="o">(</span><span class="nc">Message</span><span class="o">(</span><span class="s">&quot;delayed fourth&quot;</span><span class="o">),</span> <span class="nc">Map</span><span class="o">(</span><span class="nc">AMQ_SCHEDULED_DELAY</span> <span class="o">-&gt;</span> <span class="mi">3000</span><span class="o">))</span>
+</span><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="n">delayedMessage</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The fourth messages makes use of ActiveMQ&rsquo;s scheduled delay feature. To do this, we had to send a <code>CamelMessage</code> with modified headers. All available CamelMessage options are available here. Unfortunately, this does leak knowledge of ActiveMQ outside of our SimpleProducer, but introducing a level of indirection would easily solve it.</p>
+
+<h2>Conclusion</h2>
+
+<p>We have sent messages through ActiveMQ using Akka-Camel, all in about 40 lines of code. A working example can be <a href="https://github.com/cjwebb/blog-code/blob/master/akka-camel-and-actimemq/src/main/scala/AkkaCamelAndActiveMQ.scala" title="Github codez">viewed on Github</a>. As it is possible for our actors to hide their implementation from those around them, ActiveMQ can be worked into a system using Akka without much hassle at all.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Testing in Scala with DSLs]]></title>
+    <link href="http://cjwebb.github.io/blog/2013/07/20/testing-in-scala-with-dsls/"/>
+    <updated>2013-07-20T12:00:00+01:00</updated>
+    <id>http://cjwebb.github.io/blog/2013/07/20/testing-in-scala-with-dsls</id>
+    <content type="html"><![CDATA[<p>Using a DSL to write a test can prove to be useful, especially when there are lots of prerequisites, or the problem is complex. Having a test that is incredibly readable reduces complexity overhead and aids reader comprehension. Any tests that require the reader to retain a mental map could benefit from a DSL.</p>
+
+<p>It is worth experimenting to see what advantages a DSL provides to your tests. If your tests are short and readable without, it will be a waste of time trying to use a DSL.</p>
+
+<h2>What is a DSL?</h2>
+
+<p><a href="http://en.wikipedia.org/wiki/Domain-specific_language">The Wikipedia article says:</a></p>
+
+<blockquote><p>A domain-specific language (DSL) is a type of programming language or specification language in software development and domain engineering dedicated to a particular problem domain, a particular problem representation technique, and/or a particular solution technique.</p></blockquote>
+
+<p>The definition of a DSL makes it quite clear that a DSL is tailored to fit a particular problem. The article also explains that a DSL should be far more expressive than is achievable by a general purpose language, and that they should be as concise a definition as possible.</p>
+
+<blockquote><p>What is the most concise, readable way of expressing my problem?</p></blockquote>
+
+<p>It is often best to aim for natural language. Modeling the problem this way hugely increases readability, and has the benefit that anyone can understand it. Many people start using symbols to represent the domain, but this further complicates matters.</p>
+
+<p>For example, which of the following two lines is the most understandable?</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>alice ~> bob
+</span><span class='line'>alice isFriendsWith bob</span></code></pre></td></tr></table></div></figure>
+
+
+<p>For a newcomer to the code, the symbol&rsquo;s meaning will have to be looked up. However, isFriendsWith is a concept familiar to any English speaker over the age of five. Always ask yourself, what is the most concise, readable way of expressing my problem?</p>
+
+<h2>Code Under Test</h2>
+
+<p>To demonstrate testing with a DSL, let&rsquo;s read some tests. They cover the most ubiquitous of use cases in the modern web: a social friends graph.</p>
+
+<p>What is the specification of our FriendsGraph?</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>FriendsGraphSpec:
+</span><span class='line'> - can store and retrieve people
+</span><span class='line'> - can store a friend
+</span><span class='line'> - retrieves friends, first in last out</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The tests, and the code under test, are <a href="http://github.com">available on Github</a>.</p>
+
+<h3>Test Without a DSL</h3>
+
+<p>This is probably what a lot of tests look like before refactoring. There is room for improvement, but the test itself is fairly readable.</p>
+
+<figure class='code'><figcaption><span>FriendsGraphSpec.scala </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.matchers.ShouldMatchers</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.</span><span class="o">{</span><span class="nc">OneInstancePerTest</span><span class="o">,</span> <span class="nc">FreeSpec</span><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">FriendsGraphSpec</span> <span class="k">extends</span> <span class="nc">FreeSpec</span> <span class="k">with</span> <span class="nc">ShouldMatchers</span> <span class="k">with</span> <span class="nc">OneInstancePerTest</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">graph</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">FriendsGraph</span><span class="o">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;can store and retrieve people&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">getPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="n">alice</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;can store a friend&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">bob</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;bob-id&quot;</span><span class="o">,</span> <span class="s">&quot;Bob&quot;</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">bob</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">getFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="n">bob</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;retrieves friends, first in last out&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">bob</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;bob-id&quot;</span><span class="o">,</span> <span class="s">&quot;Bob&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">charlie</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;charlie-id&quot;</span><span class="o">,</span> <span class="s">&quot;Charlie&quot;</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">bob</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">charlie</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">charlie</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">getFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="n">charlie</span><span class="o">,</span> <span class="n">bob</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Test with DSL</h3>
+
+<p>Notable improvements are shown after refactoring using a DSL. The number of lines of code has gone up slightly, but crucially, the tests are expressed in far fewer lines. The last one is now expressed in four lines instead of nine.</p>
+
+<p>The tests are also now written in terms that everyone can understand. People are now referred to purely by name, and relationships between them are clearly expressed.</p>
+
+<p>The example below uses the <a href="http://www.artima.com/weblogs/viewpost.jsp?thread=179766" title="Pimp my Library by Martin Odersky">Pimp My Library</a> pattern to convert a Person into a PersonDSL. It is equally valid to not use implicits, and simply return a case class of PersonDSL from the createPerson method. The choice of how to construct the DSL is down to personal preference, and coding conventions. An example of writing a DSL without using implicits is <a href="http://github.com">available in the example code here</a>.</p>
+
+<figure class='code'><figcaption><span>FriendsGraphSpecWithDSL.scala </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.matchers.ShouldMatchers</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.</span><span class="o">{</span><span class="nc">OneInstancePerTest</span><span class="o">,</span> <span class="nc">FreeSpec</span><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">FriendsGraphSpecWithDSL</span> <span class="k">extends</span> <span class="nc">FreeSpec</span> <span class="k">with</span> <span class="nc">ShouldMatchers</span> <span class="k">with</span> <span class="nc">OneInstancePerTest</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">graph</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">FriendsGraph</span><span class="o">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;can store and retrieve people&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">_alice</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">getPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="n">alice</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;can store a friend&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="nc">_alice</span><span class="o">,</span> <span class="nc">_bob</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">alice</span> <span class="n">befriends</span> <span class="n">bob</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">alice</span> <span class="n">isFriendsWith</span> <span class="n">bob</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;retrieves friends, first in last out&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">,</span> <span class="n">charlie</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="nc">_alice</span><span class="o">,</span> <span class="nc">_bob</span><span class="o">,</span> <span class="nc">_charlie</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">alice</span> <span class="n">befriends</span> <span class="n">bob</span>
+</span><span class='line'>    <span class="n">alice</span> <span class="n">befriends</span> <span class="n">charlie</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">alice</span> <span class="n">isFriendsWith</span> <span class="o">(</span><span class="n">charlie</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">_alice</span><span class="o">()</span> <span class="k">=</span> <span class="n">createPerson</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">_bob</span><span class="o">()</span> <span class="k">=</span> <span class="n">createPerson</span><span class="o">(</span><span class="s">&quot;bob-id&quot;</span><span class="o">,</span> <span class="s">&quot;Bob&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">_charlie</span><span class="o">()</span> <span class="k">=</span> <span class="n">createPerson</span><span class="o">(</span><span class="s">&quot;charlie-id&quot;</span><span class="o">,</span> <span class="s">&quot;Charlie&quot;</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">createPerson</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">person</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">person</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">person</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">getPerson</span><span class="o">(</span><span class="n">person</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">getPerson</span><span class="o">(</span><span class="n">person</span><span class="o">.</span><span class="n">id</span><span class="o">).</span><span class="n">getOrElse</span><span class="o">(</span><span class="n">fail</span><span class="o">(</span><span class="s">&quot;could not find person: &quot;</span> <span class="o">+</span> <span class="n">person</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">def</span> <span class="n">pimpPerson</span><span class="o">(</span><span class="n">person</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span><span class="k">:</span> <span class="kt">PersonDSL</span> <span class="o">=</span> <span class="nc">PersonDSL</span><span class="o">(</span><span class="n">person</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">case</span> <span class="k">class</span> <span class="nc">PersonDSL</span><span class="o">(</span><span class="n">person</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">def</span> <span class="n">befriends</span><span class="o">(</span><span class="n">friend</span><span class="k">:</span> <span class="kt">PersonDSL</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">person</span><span class="o">,</span> <span class="n">friend</span><span class="o">.</span><span class="n">person</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="k">def</span> <span class="n">isFriendsWith</span><span class="o">(</span><span class="n">friends</span><span class="k">:</span> <span class="kt">PersonDSL*</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">graph</span><span class="o">.</span><span class="n">getFriends</span><span class="o">(</span><span class="n">person</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="n">friends</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">person</span><span class="o">))</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Conclusion</h2>
+
+<p>DSLs have the ability to make tests easier to understand. However, as with anything, they are not applicable to all circumstances. It is but one technique. The example provided was a good fit as friendships between people are best understood, not as adjacency lists, but as actions and relationships.</p>
+
+<p>Next time you start writing a complicated test, try altering your view on it and consider how it would read as a DSL. It may be compelling.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Better Assertions with ScalaTest]]></title>
+    <link href="http://cjwebb.github.io/blog/2013/05/27/better-assertions-with-scalatest/"/>
+    <updated>2013-05-27T08:20:00+01:00</updated>
+    <id>http://cjwebb.github.io/blog/2013/05/27/better-assertions-with-scalatest</id>
+    <content type="html"><![CDATA[<p>Scala has three different frameworks for writing unit tests, JUnit, <a href="http://etorreborre.github.io/specs2/guide/org.specs2.guide.QuickStart.html" title="Specs2">Specs2</a> and <a href="http://www.scalatest.org/" title="ScalaTest">ScalaTest</a>. I have mainly been using ScalaTest since I started to learn Scala about four months ago. One of the areas I have been concentrating on is how to write good assertions. Specifically, ones that yield easily diagnosable error messages when they fail.</p>
+
+<p>Whilst tests are useful to verify that code works, their other useful quality is that of preventing regressions. With tests, one can refactor and modify code without fear. Often these changes will cause an existing test to fail, and we want to diagnose the regression as fast as possible.</p>
+
+<p>If you have read the <a href="http://www.scalatest.org/user_guide/writing_your_first_test" title="ScalaTest - Writing your first test">ScalaTest User Guide</a>, this example should be familiar to you:</p>
+
+<figure class='code'><figcaption><span>StackSpec.scala </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">collection.mutable.Stack</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest._</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">StackSpec</span> <span class="k">extends</span> <span class="nc">FlatSpec</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;A Stack&quot;</span> <span class="n">should</span> <span class="s">&quot;pop values in last-in-first-out order&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">stack</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
+</span><span class='line'>    <span class="n">stack</span><span class="o">.</span><span class="n">push</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">stack</span><span class="o">.</span><span class="n">push</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">assert</span><span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="o">()</span> <span class="o">===</span> <span class="mi">3</span><span class="o">)</span> <span class="c1">// this will fail - should be 2</span>
+</span><span class='line'>    <span class="n">assert</span><span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="o">()</span> <span class="o">===</span> <span class="mi">1</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>When running the test in an IDE, the error message will look like this:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>2 did not equal 3
+</span><span class='line'>org.scalatest.exceptions.TestFailedException: 2 did not equal 3
+</span><span class='line'>  at org.scalatest.Assertions$class.newAssertionFailedException(Assertions.scala:318)
+</span><span class='line'>  at StackSpec.newAssertionFailedException(StackSpec.scala:4)
+</span><span class='line'>  at org.scalatest.Assertions$class.assert(Assertions.scala:401)
+</span><span class='line'>  at StackSpec.assert(StackSpec.scala:4)
+</span><span class='line'>  at StackSpec$$anonfun$1.apply$mcV$sp(StackSpec.scala:10)
+</span><span class='line'>  ... (and many more lines)</span></code></pre></td></tr></table></div></figure>
+
+
+<p>That isn&rsquo;t too bad, but the test is just above the stacktrace, and I&rsquo;ve already highlighted the line that will fail.</p>
+
+<p>This is what you will see in your CI build, if you use SBT:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[info] StackSpec:
+</span><span class='line'>[info] A Stack
+</span><span class='line'>[info] - should pop values in last-in-first-out order *** FAILED ***
+</span><span class='line'>[info]   2 did not equal 3 (StackSpec.scala:10)
+</span><span class='line'>[error] Failed: : Total 1, Failed 1, Errors 0, Passed 0, Skipped 0
+</span><span class='line'>[error] Failed tests:
+</span><span class='line'>[error]   StackSpec</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The message that &ldquo;2 did not equal 3&rdquo; becomes more vague the further you get away from the test. If you saw that error message next week, would you remember that 2 was a value on the stack? And what does 3 have to do with it? Crucially, would your coworkers/contributors understand the failure the first time they looked at it?</p>
+
+<p>Clearly, we want an error message that will represent the problem no matter how familiar you are with the implementation of the test.</p>
+
+<p>We can use the withClue function to prepend a message:</p>
+
+<figure class='code'><figcaption><span>StackSpecWithClue.scala </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">collection.mutable.Stack</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest._</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">StackSpec</span> <span class="k">extends</span> <span class="nc">FlatSpec</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;A Stack&quot;</span> <span class="n">should</span> <span class="s">&quot;pop values in last-in-first-out order&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">stack</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
+</span><span class='line'>    <span class="n">stack</span><span class="o">.</span><span class="n">push</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">stack</span><span class="o">.</span><span class="n">push</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">withClue</span><span class="o">(</span><span class="s">&quot;value popped from stack: &quot;</span><span class="o">)</span> <span class="o">{</span> <span class="n">assert</span><span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="o">()</span> <span class="o">===</span> <span class="mi">3</span><span class="o">)</span> <span class="o">}</span>
+</span><span class='line'>    <span class="n">withClue</span><span class="o">(</span><span class="s">&quot;value popped from stack: &quot;</span><span class="o">)</span> <span class="o">{</span> <span class="n">assert</span><span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="o">()</span> <span class="o">===</span> <span class="mi">1</span><span class="o">)</span> <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>value popped from stack: 2 did not equal 3
+</span><span class='line'>org.scalatest.exceptions.TestFailedException: value popped from stack: 2 did not equal 3
+</span><span class='line'>  at org.scalatest.Assertions$class.newAssertionFailedException(Assertions.scala:318)
+</span><span class='line'>  at StackSpecWithClue.newAssertionFailedException(StackSpecWithClue.scala:4)
+</span><span class='line'>  at org.scalatest.Assertions$class.assert(Assertions.scala:401)
+</span><span class='line'>  at StackSpecWithClue.assert(StackSpecWithClue.scala:4)
+</span><span class='line'>  at StackSpecWithClue$$anonfun$1$$anonfun$apply$mcV$sp$1.apply$mcV$sp(StackSpecWithClue.scala:10)
+</span><span class='line'>  ... (and many more lines)</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This is already better; we have some context! In an ideal world, a test would only have one assertion, and it would give us full diagnostics. At the moment, our test fails as 2 does not equal 3, but it could equally fail if the last value popped does not equal 1. It would be nicer to push some values onto the stack, pop them all off, and then make sure they were in the correct order. That could be done with one assertion, and the full context of the test could be displayed in an error message.</p>
+
+<figure class='code'><figcaption><span>StackSpecWithOneAssertion.scala </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">collection.mutable._</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest._</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.matchers.ShouldMatchers</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">StackSpecWithOneAssertion</span> <span class="k">extends</span> <span class="nc">FlatSpec</span> <span class="k">with</span> <span class="nc">ShouldMatchers</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="s">&quot;A Stack&quot;</span> <span class="n">should</span> <span class="s">&quot;pop values in last-in-first-out order&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">valuesToPush</span> <span class="k">=</span> <span class="nc">Seq</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">)</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">stack</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
+</span><span class='line'>      <span class="n">valuesToPush</span> <span class="n">foreach</span> <span class="o">{</span> <span class="n">v</span> <span class="k">=&gt;</span> <span class="n">stack</span><span class="o">.</span><span class="n">push</span><span class="o">(</span><span class="n">v</span><span class="o">)</span> <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">val</span> <span class="n">valuesPopped</span> <span class="k">=</span> <span class="nc">ArrayBuffer</span><span class="o">[</span><span class="kt">Int</span><span class="o">]()</span>
+</span><span class='line'>      <span class="k">while</span> <span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="n">nonEmpty</span><span class="o">)</span> <span class="n">valuesPopped</span> <span class="o">+=</span> <span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="o">()</span>
+</span><span class='line'>      <span class="n">valuesPopped</span><span class="o">.</span><span class="n">update</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">5</span><span class="o">)</span> <span class="c1">// to fail the test</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">withClue</span><span class="o">(</span><span class="s">&quot;values popped from stack: &quot;</span><span class="o">)</span> <span class="o">{</span> <span class="n">valuesPopped</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="n">valuesToPush</span><span class="o">.</span><span class="n">reverse</span><span class="o">)</span> <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>order of values popped from stack: ArrayBuffer(5, 3, 2, 1) was not equal to ArrayBuffer(4, 3, 2, 1)
+</span><span class='line'>org.scalatest.exceptions.TestFailedException: values popped from stack: ArrayBuffer(5, 3, 2, 1) was not equal to ArrayBuffer(4, 3, 2, 1)
+</span><span class='line'>  at org.scalatest.matchers.ClassicMatchers$class.newTestFailedException(Matchers.scala:155)
+</span><span class='line'>  at StackSpecWithOneAssertion.newTestFailedException(StackSpecWithOneAssertion.scala:5)
+</span><span class='line'>  at org.scalatest.matchers.ShouldMatchers$ShouldMethodHelper$.shouldMatcher(ShouldMatchers.scala:884)
+</span><span class='line'>  at org.scalatest.matchers.ShouldMatchers$SeqShouldWrapper.should(ShouldMatchers.scala:1737)
+</span><span class='line'>  at StackSpecWithOneAssertion$$anonfun$1$$anonfun$apply$mcV$sp$1.apply$mcV$sp(StackSpecWithOneAssertion.scala:17)
+</span><span class='line'>  ... (and many more lines)</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We now have context for the failure, and full diagnostics. If any of the numbers come out in the wrong order, we will be able to tell &ndash; not just the first failure.</p>
+
+<p>You should always try to give good failure messages. If you spend an extra minute ensuring it is readable and comprehensive, you&rsquo;ll get that time back when the test fails. Also remember, it may not be you trying to figure out why the assertion failed!</p>
+]]></content>
+  </entry>
+  
+</feed>
