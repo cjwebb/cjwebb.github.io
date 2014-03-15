@@ -9,7 +9,7 @@ Working out the [Fibonacci numbers][fib] are a standard exercise when learning a
 
 
 First, a quick recap of the beginning of the series. If this is unfamiliar to you, please click the first link in this post!
-> 0, 1, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
+> 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55
 
 ### Nth Fibonacci Number
 > Given a number n, return the corresponding Fibonacci number from the sequence.
