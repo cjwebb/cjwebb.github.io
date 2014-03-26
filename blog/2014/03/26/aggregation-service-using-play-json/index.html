@@ -1,0 +1,584 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Aggregation Services using Play JSON - cjwebb.github.io</title>
+  <meta name="author" content="Colin Webb">
+
+  
+  <meta name="description" content="Aggregation services (sometimes known as Composite or Hydration services) are useful when working in SOA. In SOA, services are responsible for &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://cjwebb.github.io/blog/2014/03/26/aggregation-service-using-play-json">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="cjwebb.github.io" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-41253515-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">cjwebb.github.io</a></h1>
+  
+    <h2>A software engineer in London</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:cjwebb.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Aggregation Services Using Play JSON</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-26T19:30:00+00:00" pubdate data-updated="true">Mar 26<span>th</span>, 2014</time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Aggregation services (sometimes known as Composite or Hydration services) are useful when working in SOA. In SOA, services are responsible for discrete objects and collections, yet still often need to reference other object or collections controlled by another service. This is done via referencing Ids. In order to display something useful to the user it is necessary to lookup data from multiple sources and aggregate them together.</p>
+
+<p>Let&rsquo;s look at an example, containing one of my favourite foods:</p>
+
+<h2>Mmm, Sandwiches</h2>
+
+<p>Colin’s Sandwich Shop has a website, that along with selling and delivering sandwiches, also writes a few articles about topical events in the sandwich industry. These articles also contain relevant sandwiches, which the reader will hopefully then purchase.</p>
+
+<p>They have the following APIs, starting with the Article Service:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>GET /article/a1</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='json'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;a1&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Top 3 Sandwiches&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;They all contain bacon.&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;product_list&quot;</span><span class="p">:</span> <span class="p">[</span>
+</span><span class='line'>    <span class="s2">&quot;s1&quot;</span><span class="p">,</span> <span class="s2">&quot;s2&quot;</span><span class="p">,</span> <span class="s2">&quot;s3&quot;</span>
+</span><span class='line'>  <span class="p">]</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Notice that <code>product_list</code> contains only identifiers, not full products.</p>
+
+<p>The sandwich shop also has a product API, which enables lookup of a product by id:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>GET /product/s1</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='json'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;s1&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Chicken &amp; Bacon&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;image&quot;</span><span class="p">:</span> <span class="s2">&quot;img/sandwich/s1.jpg&quot;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In order to display the articles, the consumer of the API needs to fetch the article, fetch all the products in <code>product_list</code> and then aggregate the results.</p>
+
+<p>The API of the aggregation service would therefore be:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>GET /article/a1</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='json'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;a1&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Top 3 Sandwiches&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;They all contain bacon.&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;product_list&quot;</span><span class="p">:</span> <span class="p">[</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>      <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;s1&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Club Sandwich&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="nt">&quot;image&quot;</span><span class="p">:</span> <span class="s2">&quot;img/sandwich/s1.jpg&quot;</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>      <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;s2&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Chicken &amp; Bacon&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="nt">&quot;image&quot;</span><span class="p">:</span> <span class="s2">&quot;img/sandwich/s2.jpg&quot;</span>
+</span><span class='line'>    <span class="p">},</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>      <span class="nt">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;s3&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;BLT&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="nt">&quot;image&quot;</span><span class="p">:</span> <span class="s2">&quot;img/sandwich/s3.jpg&quot;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>  <span class="p">]</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Is Scala the right tool?</h2>
+
+<p>When faced with constructing an aggregation service in Scala most people start by defining the case classes they will need to model the data. This is the workflow, if you convert to case classes:</p>
+
+<blockquote><p>Read JSON &ndash;> Convert to case classes &ndash;> Change stuff &ndash;> Write JSON</p></blockquote>
+
+<p>We obviously need to read JSON from somewhere. We need to change stuff about it, and we need to write it back out again. What exactly does converting to case classes give us? It does have very apparent drawbacks:</p>
+
+<h3>Advantages of converting to case-classes</h3>
+
+<ul>
+<li>We can easily fetch fields</li>
+<li>Normal Scala static typing</li>
+</ul>
+
+
+<h3>Disadvantages of converting to case-classes</h3>
+
+<ul>
+<li>Need to write and maintain the case classes.</li>
+<li>Need to write and maintain lenses, or zippers, to update nested immutable data.</li>
+<li>If JSON contains more than 22 fields, Scala case classes are useless.</li>
+</ul>
+
+
+<p>Writing <a href="http://stackoverflow.com/questions/3900307/cleaner-way-to-update-nested-structures">Lenses or Zippers</a> is required for updating nested immutable case classes. Using the standard library to do this is not pretty.</p>
+
+<p>However, the biggest cost of this method is the maintenance of the cases classes and the lenses/zippers. If the Article service starts returning more data, we have to update the aggregation service too. Similarly, if the product service returns more data, we have to update the aggregation service again.</p>
+
+<p>Converting the JSON to case classes is very rigid. It would be nice if the data just flowed through the aggregation service, and we could apply transformations to it:</p>
+
+<blockquote><p>Read JSON &ndash;> Change stuff &ndash;> Write JSON</p></blockquote>
+
+<p>The alternatives to using Scala case-classes are to ignore type-safey, and model everything as a <code>Map[Any]</code>. If we&rsquo;re doing that, we may as well use a dynamic language. Aggregation services in JavaScript, Python or Clojure are probably quite nice too.</p>
+
+<p>Or we stick with Scala, and use <a href="http://www.playframework.com/documentation/2.2.x/ScalaJson">Play JSON</a> and <a href="https://github.com/mandubian/play-json-zipper">Play-JSON-zipper</a>.</p>
+
+<h2>Play JSON Transformations</h2>
+
+<p>Play&rsquo;s JSON library provides something akin to <a href="http://goessner.net/articles/JsonPath/">JSONPath</a> functionality. We can search for, update, or delete anything we want to. Let&rsquo;s continue our example, and look at how an aggregation service for Colin&rsquo;s Sandwich Shop could be built.</p>
+
+<p>How do we find all the product ids from some JSON? Easy! We use the recursive search of Play JSON to find anything named &ldquo;product_list&rdquo;, and can be read as <code>List[String]</code>. The symbol <code>\\</code> will return a list of matches, which we then convert to <code>List[String]</code> and flatten.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'>  <span class="k">def</span> <span class="n">findProductIds</span><span class="o">(</span><span class="n">articleJson</span><span class="k">:</span> <span class="kt">JsValue</span><span class="o">)</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>    <span class="o">(</span><span class="n">articleJson</span> <span class="o">\\</span> <span class="s">&quot;product_list&quot;</span><span class="o">)</span>
+</span><span class='line'>      <span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">asOpt</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">]])</span>
+</span><span class='line'>      <span class="o">.</span><span class="n">flatten</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Pretty simple. How then do we update the JSON, given a map of Products by ProductId? Play JSON is limited in this regard, and I&rsquo;ve found the easiest way is to use <a href="https://github.com/mandubian/play-json-zipper">Play-Json-Zipper</a> instead.</p>
+
+<p>The method <code>updateAll</code> takes a <code>PartialFunction[(JsPath, JsValue), JsValue])</code> so we can limit the scope of the update, and then replace ids with fully-fledged products.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">replaceProductIdsWithProducts</span><span class="o">(</span><span class="n">articleJson</span><span class="k">:</span> <span class="kt">JsValue</span><span class="o">,</span>
+</span><span class='line'>                                  <span class="n">productMap</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">JsValue</span><span class="o">])</span><span class="k">:</span> <span class="kt">JsValue</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">isProductList</span><span class="o">(</span><span class="n">jsPath</span><span class="k">:</span> <span class="kt">JsPath</span><span class="o">)</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span>
+</span><span class='line'>    <span class="nc">JsPathExtension</span><span class="o">.</span><span class="n">hasKey</span><span class="o">(</span><span class="n">jsPath</span><span class="o">)</span> <span class="o">==</span> <span class="nc">Some</span><span class="o">(</span><span class="s">&quot;product_list&quot;</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">replaceWithProducts</span><span class="o">(</span><span class="n">arr</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">JsValue</span><span class="o">])</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">JsValue</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>    <span class="n">arr</span><span class="o">.</span><span class="n">collect</span> <span class="o">{</span> <span class="k">case</span> <span class="nc">JsString</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">productMap</span><span class="o">.</span><span class="n">get</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="o">}.</span><span class="n">flatten</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">articleJson</span><span class="o">.</span><span class="n">updateAll</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="o">(</span><span class="n">jsPath</span><span class="o">,</span> <span class="nc">JsArray</span><span class="o">(</span><span class="n">arr</span><span class="o">))</span> <span class="k">if</span> <span class="n">isProductList</span><span class="o">(</span><span class="n">jsPath</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span><span class='line'>      <span class="nc">JsArray</span><span class="o">(</span><span class="n">replaceWithProducts</span><span class="o">(</span><span class="n">arr</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>These two simple functions provide the only complexity of the aggregation service. The rest is just manipulating <code>Future</code> to fetch the article, products, and return a result. In the end, we can do the entire workflow in about 50 lines of code.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.actor.ActorSystem</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">scala.concurrent.</span><span class="o">{</span><span class="nc">Await</span><span class="o">,</span> <span class="nc">Future</span><span class="o">}</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">play.api.libs.json._</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">play.api.libs.json.extensions._</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">object</span> <span class="nc">Main</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">timeout</span> <span class="k">=</span> <span class="mi">1</span> <span class="n">second</span>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">actorSystem</span> <span class="k">=</span> <span class="nc">ActorSystem</span><span class="o">()</span>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">dispatcher</span> <span class="k">=</span> <span class="n">actorSystem</span><span class="o">.</span><span class="n">dispatcher</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">val</span> <span class="n">articleApi</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">ArticleApi</span><span class="o">()</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">productApi</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">ProductApi</span><span class="o">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">findProductIds</span><span class="o">(</span><span class="n">articleJson</span><span class="k">:</span> <span class="kt">JsValue</span><span class="o">)</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>    <span class="o">(</span><span class="n">articleJson</span> <span class="o">\\</span> <span class="s">&quot;product_list&quot;</span><span class="o">)</span>
+</span><span class='line'>      <span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">asOpt</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">]])</span>
+</span><span class='line'>      <span class="o">.</span><span class="n">flatten</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">fetchProducts</span><span class="o">(</span><span class="n">productIds</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span><span class="k">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">JsValue</span><span class="o">]]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nc">Future</span><span class="o">.</span><span class="n">traverse</span><span class="o">(</span><span class="n">productIds</span><span class="o">){</span> <span class="n">id</span> <span class="k">=&gt;</span>
+</span><span class='line'>      <span class="n">productApi</span><span class="o">.</span><span class="n">getProduct</span><span class="o">(</span><span class="n">id</span><span class="o">)</span> <span class="n">map</span> <span class="o">(</span><span class="n">pOpt</span> <span class="k">=&gt;</span> <span class="n">pOpt</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">p</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">p</span><span class="o">)))</span>
+</span><span class='line'>    <span class="o">}</span> <span class="n">map</span> <span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">flatten</span><span class="o">.</span><span class="n">toMap</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">replaceProductIdsWithProducts</span><span class="o">(</span><span class="n">articleJson</span><span class="k">:</span> <span class="kt">JsValue</span><span class="o">,</span>
+</span><span class='line'>                                    <span class="n">productMap</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">JsValue</span><span class="o">])</span><span class="k">:</span> <span class="kt">JsValue</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">def</span> <span class="n">isProductList</span><span class="o">(</span><span class="n">jsPath</span><span class="k">:</span> <span class="kt">JsPath</span><span class="o">)</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span>
+</span><span class='line'>      <span class="nc">JsPathExtension</span><span class="o">.</span><span class="n">hasKey</span><span class="o">(</span><span class="n">jsPath</span><span class="o">)</span> <span class="o">==</span> <span class="nc">Some</span><span class="o">(</span><span class="s">&quot;product_list&quot;</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">def</span> <span class="n">replaceWithProducts</span><span class="o">(</span><span class="n">arr</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">JsValue</span><span class="o">])</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">JsValue</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>      <span class="n">arr</span><span class="o">.</span><span class="n">collect</span> <span class="o">{</span> <span class="k">case</span> <span class="nc">JsString</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">productMap</span><span class="o">.</span><span class="n">get</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="o">}.</span><span class="n">flatten</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">articleJson</span><span class="o">.</span><span class="n">updateAll</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">case</span> <span class="o">(</span><span class="n">jsPath</span><span class="o">,</span> <span class="nc">JsArray</span><span class="o">(</span><span class="n">arr</span><span class="o">))</span> <span class="k">if</span> <span class="n">isProductList</span><span class="o">(</span><span class="n">jsPath</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span><span class='line'>        <span class="nc">JsArray</span><span class="o">(</span><span class="n">replaceWithProducts</span><span class="o">(</span><span class="n">arr</span><span class="o">))</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">transform</span><span class="o">()</span><span class="k">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">JsValue</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">for</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">article</span> <span class="k">&lt;-</span> <span class="n">articleApi</span><span class="o">.</span><span class="n">getArticle</span><span class="o">(</span><span class="s">&quot;a1&quot;</span><span class="o">)</span>
+</span><span class='line'>      <span class="n">productIds</span> <span class="k">&lt;-</span> <span class="nc">Future</span> <span class="o">{</span> <span class="n">findProductIds</span><span class="o">(</span><span class="n">article</span><span class="o">)</span> <span class="o">}</span>
+</span><span class='line'>      <span class="n">products</span> <span class="k">&lt;-</span> <span class="n">fetchProducts</span><span class="o">(</span><span class="n">productIds</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">yield</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">replaceProductIdsWithProducts</span><span class="o">(</span><span class="n">article</span><span class="o">,</span> <span class="n">products</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">println</span><span class="o">(</span><span class="nc">Await</span><span class="o">.</span><span class="n">result</span><span class="o">(</span><span class="n">transform</span><span class="o">(),</span> <span class="mi">2</span> <span class="n">seconds</span><span class="o">))</span>
+</span><span class='line'>  <span class="n">actorSystem</span><span class="o">.</span><span class="n">shutdown</span><span class="o">()</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>As per usual, working code is available on Github.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Colin Webb</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-26T19:30:00+00:00" pubdate data-updated="true">Mar 26<span>th</span>, 2014</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/scala/'>scala</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://cjwebb.github.io/blog/2014/03/26/aggregation-service-using-play-json/" data-via="colinjameswebb" data-counturl="http://cjwebb.github.io/blog/2014/03/26/aggregation-service-using-play-json/" >Tweet</a>
+  
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/10/30/fibonacci-numbers-in-scala/" title="Previous Post: Fibonacci Numbers in Scala">&laquo; Fibonacci Numbers in Scala</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/03/26/aggregation-service-using-play-json/">Aggregation Services Using Play JSON</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/10/30/fibonacci-numbers-in-scala/">Fibonacci Numbers in Scala</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/01/akka-camel-and-activemq/">Akka Camel and ActiveMQ</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/07/20/testing-in-scala-with-dsls/">Testing in Scala With DSLs</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/05/27/better-assertions-with-scalatest/">Better Assertions With ScalaTest</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <h1>About Me</h1>
+  <p>My name is Colin Webb, and I'm a software engineer, working in London.</p>
+
+  <p>Currently employed to code in Scala, having previously worked with Java, JavaScript and Python</p>
+  <p>You can find me on Twitter <a href="http://twitter.com/colinjameswebb">@colinjameswebb</a>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Colin Webb -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'cjwebbgithubio';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://cjwebb.github.io/blog/2014/03/26/aggregation-service-using-play-json/';
+        var disqus_url = 'http://cjwebb.github.io/blog/2014/03/26/aggregation-service-using-play-json/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
