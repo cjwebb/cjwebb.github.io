@@ -199,7 +199,7 @@ object Main extends App {
 }
 {% endcodeblock %}
 
-As per usual, working code is available on Github.
+As per usual, [working code is available on Github][githubs].
 
 [cleaner-update-nested]: http://stackoverflow.com/questions/3900307/cleaner-way-to-update-nested-structures
 [json-transformers]: http://mandubian.com/2012/10/29/unveiling-play-2-dot-1-json-api-part3-json-transformers/
