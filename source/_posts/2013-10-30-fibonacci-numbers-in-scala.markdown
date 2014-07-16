@@ -3,7 +3,7 @@ layout: post
 title: "Fibonacci Numbers in Scala"
 date: 2013-10-30 20:45
 comments: true
-categories: 
+categories: scala 
 ---
 Working out the [Fibonacci numbers][fib] are a standard exercise when learning a programming language, or just refreshing your knowledge. Below, is a recap of various ways to calculate them in Scala. [All the code is available in a handy gist][gist].
 
