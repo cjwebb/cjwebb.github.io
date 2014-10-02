@@ -9,7 +9,7 @@
   <meta name="author" content="Colin Webb">
 
   
-  <meta name="description" content="My previous blog post talked about building Aggregation Services using Play-JSON. In it, I mentioned that Aggregation Services using JavaScript might &hellip;">
+  <meta name="description" content="In abstract algebra, a branch of mathematics, a monoid is an algebraic structure with a single associative binary operation and an identity element. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -77,6 +77,151 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/10/02/monoids/">Monoids</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-10-02T22:00:00+01:00" pubdate data-updated="true">Oct 2<span>nd</span>, 2014</time>
+        
+         | <a href="/blog/2014/10/02/monoids/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><blockquote><p>In abstract algebra, a branch of mathematics, a monoid is an algebraic structure with a single associative binary operation and an identity element. Monoids are studied in semigroup theory as they are semigroups with identity.</p></blockquote>
+
+<p><a href="http://en.wikipedia.org/wiki/Monoid">Wikipedia has the above definition of a Monoid</a>. This blog post will desconstruct that definition to simply describe what a monoid is, and why you would want to use one.</p>
+
+<p>We will, however, ignore a proper defintion of &lsquo;abstract algebra&rsquo; as that would mean writing several textbooks. Just imagine an &lsquo;algebraic structure&rsquo; as a thing that contains functions. A &lsquo;thing that contains functions&rsquo; is sometimes named a class in programming languages.</p>
+
+<p>So, with that out of the way, this is the list of things we will cover:</p>
+
+<ul>
+<li>Associative</li>
+<li>Semigroup</li>
+<li>Identity</li>
+</ul>
+
+
+<h2>Associative</h2>
+
+<p>You should have learnt some associative things during Mathematics lessons at primary school. Addition and Multiplication are associative. Subtraction and Division are not. Associativity means that you can reorder operations on a list of things, and always receive the same result.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="o">((((</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">)</span> <span class="o">+</span> <span class="mi">3</span><span class="o">)</span> <span class="o">+</span> <span class="mi">4</span><span class="o">)</span> <span class="o">+</span> <span class="mi">5</span><span class="o">)</span> <span class="k">=</span> <span class="mi">15</span>
+</span><span class='line'><span class="o">(</span><span class="mi">1</span> <span class="o">+</span> <span class="o">(</span><span class="mi">2</span> <span class="o">+</span> <span class="o">(</span><span class="mi">3</span> <span class="o">+</span> <span class="o">(</span><span class="mi">4</span> <span class="o">+</span> <span class="mi">5</span><span class="o">))))</span> <span class="k">=</span> <span class="mi">15</span> <span class="c1">// reordered, same result</span>
+</span><span class='line'><span class="o">((((</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span><span class="o">)</span> <span class="o">-</span> <span class="mi">3</span><span class="o">)</span> <span class="o">-</span> <span class="mi">4</span><span class="o">)</span> <span class="o">-</span> <span class="mi">5</span><span class="o">)</span> <span class="k">=</span> <span class="o">-</span><span class="mi">13</span>
+</span><span class='line'><span class="o">(</span><span class="mi">1</span> <span class="o">-</span> <span class="o">(</span><span class="mi">2</span> <span class="o">-</span> <span class="o">(</span><span class="mi">3</span> <span class="o">-</span> <span class="o">(</span><span class="mi">4</span> <span class="o">-</span> <span class="mi">5</span><span class="o">))))</span> <span class="k">=</span> <span class="mi">3</span> <span class="c1">// reordered, different result</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Semigroup</h2>
+
+<p>Semigroup is the name for a thing that provides an associative function. For Integers, <code>+</code> and <code>*</code> are associative functions. A Semigroup is one of those &ldquo;algebraic structures&rdquo;, and it has one function; an associative one.</p>
+
+<p>It would looks like this, for adding up Integers:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">AdditionSemigroup</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">associative</span><span class="o">(</span><span class="n">a</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span><span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It is worth noting that a Semigroup will apply to a whole type. This Semigroup will apply to all <code>Int</code>, as denoted by the square brackets after the class name. The example is written in Scala, where <code>Int</code> is an alias for <code>Integer</code>.</p>
+
+<h2>Identity</h2>
+
+<p>Also known as the zero value, or the &lsquo;value for which nothing happens&rsquo;. This will depend on what your monoid does. For instance, for an adding monoid, the identity value will be zero. Adding zero to <code>x</code> gives you <code>x</code>. For multiplication, the identity value will be 1. Multiplying 1 by <code>x</code> gives you <code>x</code>. If we had kept the identity value as zero, multiplying <code>x</code> by zero would return zero, thereby being useless. Likewise, any other value would mess up our calculation.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="mi">1</span> <span class="o">+</span> <span class="mi">1</span>     <span class="k">=</span> <span class="mi">2</span>
+</span><span class='line'><span class="mi">1</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">0</span> <span class="k">=</span> <span class="mi">2</span> <span class="c1">// we can add an &#39;identity&#39; of zero at any point</span>
+</span><span class='line'><span class="mi">4</span> <span class="o">*</span> <span class="mi">4</span>     <span class="k">=</span> <span class="mi">16</span>
+</span><span class='line'><span class="mi">4</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">1</span> <span class="k">=</span> <span class="mi">16</span> <span class="c1">// we can add an &#39;identity&#39; of 1 at any point.</span>
+</span><span class='line'><span class="mi">4</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">0</span> <span class="k">=</span> <span class="mi">0</span>  <span class="c1">// an &#39;identity&#39; of zero doesn&#39;t work for multiplication</span>
+</span><span class='line'><span class="mi">4</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">2</span> <span class="k">=</span> <span class="mi">32</span> <span class="c1">// neither does any other value. It has to be 1!</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>So what is a monoid?</h2>
+
+<p>A monoid, has an associative function, and it has an identity function. As you may be able to tell from the wikipedia description, it really is a Semigroup, but with an identity function.</p>
+
+<p>As shown above, the <code>+</code> operator on Integers is associative, and we know that the zero value for this is <code>0</code></p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">AdditionMonoid</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">identity</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">associative</span><span class="o">(</span><span class="n">a</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span><span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Why is this useful?</h2>
+
+<p>Consider the following Scala example. <code>|+|</code> is an alias for our previously-seen associative method. This particular associative method (<a href="https://github.com/scalaz/scalaz/blob/49b235695f1d3ae3217a70b419cbb33337f31ade/core/src/main/scala/scalaz/std/Map.scala#L113">taken from scalaz</a>) merges two Maps together by summing the values if the keys are equal.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">scala</span><span class="o">&gt;</span> <span class="k">import</span> <span class="nn">scalaz.Scalaz._</span> <span class="c1">// this defines the |+| operator.</span>
+</span><span class='line'><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Map</span><span class="o">(</span><span class="s">&quot;a&quot;</span> <span class="o">-&gt;</span> <span class="mf">1.0</span><span class="o">,</span> <span class="s">&quot;b&quot;</span> <span class="o">-&gt;</span> <span class="mf">3.0</span><span class="o">)</span> <span class="o">|+|</span> <span class="nc">Map</span><span class="o">(</span><span class="s">&quot;a&quot;</span> <span class="o">-&gt;</span> <span class="o">-</span><span class="mf">1.0</span><span class="o">)</span>
+</span><span class='line'><span class="n">res0</span><span class="k">:</span> <span class="kt">scala.collection.immutable.Map</span><span class="o">[</span><span class="kt">String</span>,<span class="kt">Double</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span><span class="n">a</span> <span class="o">-&gt;</span> <span class="mf">0.0</span><span class="o">,</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="mf">3.0</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We can also take advantage of the <code>reduce</code> method to do this:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">List</span><span class="o">(</span><span class="nc">Map</span><span class="o">(</span><span class="s">&quot;a&quot;</span> <span class="o">-&gt;</span> <span class="mf">1.0</span><span class="o">,</span> <span class="s">&quot;b&quot;</span> <span class="o">-&gt;</span> <span class="mf">3.0</span><span class="o">),</span> <span class="nc">Map</span><span class="o">(</span><span class="s">&quot;a&quot;</span> <span class="o">-&gt;</span> <span class="o">-</span><span class="mf">1.0</span><span class="o">)).</span><span class="n">reduce</span><span class="o">(</span><span class="k">_</span> <span class="o">|+|</span> <span class="k">_</span><span class="o">)</span>
+</span><span class='line'><span class="n">res1</span><span class="k">:</span> <span class="kt">scala.collection.immutable.Map</span><span class="o">[</span><span class="kt">String</span>,<span class="kt">Double</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span><span class="n">a</span> <span class="o">-&gt;</span> <span class="mf">0.0</span><span class="o">,</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="mf">3.0</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If you can define your problem as a Monoid, it becomes trivial to compute, and trivial to parallelise too. Remember, associative functions can be batched and executed in any order.</p>
+
+<p>Hopefully it is becoming clear why this is useful. If you want to add Integers together, most languages already include basic addition. However, Monoids can potentially be written for any type of data. As long as you define <code>identity</code> and <code>associative</code>, they can do anything you want!</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1414,6 +1559,10 @@ Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepend
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/10/02/monoids/">Monoids</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/16/aggregation-services-in-nodejs/">Aggregation Services in Node.js</a>
       </li>
     
@@ -1427,10 +1576,6 @@ Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepend
     
       <li class="post">
         <a href="/blog/2013/09/01/akka-camel-and-activemq/">Akka Camel and ActiveMQ</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/07/20/testing-in-scala-with-dsls/">Testing in Scala With DSLs</a>
       </li>
     
   </ul>
