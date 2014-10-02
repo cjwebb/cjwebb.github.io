@@ -1,0 +1,87 @@
+---
+layout: post
+title: "Monoids"
+date: 2014-10-02 22:00
+comments: true
+categories: scala 
+---
+
+> In abstract algebra, a branch of mathematics, a monoid is an algebraic structure with a single associative binary operation and an identity element. Monoids are studied in semigroup theory as they are semigroups with identity.
+
+[Wikipedia has the above definition of a Monoid](http://en.wikipedia.org/wiki/Monoid). This blog post will desconstruct that definition to simply describe what a monoid is, and why you would want to use one.
+
+We will, however, ignore a proper defintion of 'abstract algebra' as that would mean writing several textbooks. Just imagine an 'algebraic structure' as a thing that contains functions. A 'thing that contains functions' is sometimes named a class in programming languages.
+
+So, with that out of the way, this is the list of things we will cover:
+
+ - Associative
+ - Semigroup
+ - Identity
+
+## Associative
+You should have learnt some associative things during Mathematics lessons at primary school. Addition and Multiplication are associative. Subtraction and Division are not. Associativity means that you can reorder operations on a list of things, and always receive the same result.
+
+{%codeblock lang:scala%}
+((((1 + 2) + 3) + 4) + 5) = 15
+(1 + (2 + (3 + (4 + 5)))) = 15 // reordered, same result
+((((1 - 2) - 3) - 4) - 5) = -13
+(1 - (2 - (3 - (4 - 5)))) = 3 // reordered, different result
+{%endcodeblock%}
+
+## Semigroup
+Semigroup is the name for a thing that provides an associative function. For Integers, `+` and `*` are associative functions. A Semigroup is one of those "algebraic structures", and it has one function; an associative one.
+
+It would looks like this, for adding up Integers:
+
+{%codeblock lang:scala%}
+class AdditionSemigroup[Int] {
+  def associative(a: Int, b:Int) = a + b
+}
+{%endcodeblock%}
+
+It is worth noting that a Semigroup will apply to a whole type. This Semigroup will apply to all `Int`, as denoted by the square brackets after the class name. The example is written in Scala, where `Int` is an alias for `Integer`.
+
+## Identity
+Also known as the zero value, or the 'value for which nothing happens'. This will depend on what your monoid does. For instance, for an adding monoid, the identity value will be zero. Adding zero to `x` gives you `x`. For multiplication, the identity value will be 1. Multiplying 1 by `x` gives you `x`. If we had kept the identity value as zero, multiplying `x` by zero would return zero, thereby being useless. Likewise, any other value would mess up our calculation.
+
+{%codeblock lang:scala%}
+1 + 1     = 2
+1 + 1 + 0 = 2 // we can add an 'identity' of zero at any point
+4 * 4     = 16
+4 * 4 * 1 = 16 // we can add an 'identity' of 1 at any point.
+4 * 4 * 0 = 0  // an 'identity' of zero doesn't work for multiplication
+4 * 4 * 2 = 32 // neither does any other value. It has to be 1!
+{%endcodeblock%}
+
+## So what is a monoid?
+A monoid, has an associative function, and it has an identity function. As you may be able to tell from the wikipedia description, it really is a Semigroup, but with an identity function.
+
+As shown above, the `+` operator on Integers is associative, and we know that the zero value for this is `0`
+
+{%codeblock lang:scala%}
+class AdditionMonoid[Int] {
+  def identity = 0
+  def associative(a: Int, b:Int) = a + b
+}
+{%endcodeblock%}
+
+## Why is this useful?
+Consider the following Scala example. `|+|` is an alias for our previously-seen associative method. This particular associative method ([taken from scalaz](https://github.com/scalaz/scalaz/blob/49b235695f1d3ae3217a70b419cbb33337f31ade/core/src/main/scala/scalaz/std/Map.scala#L113)) merges two Maps together by summing the values if the keys are equal.
+ 
+{%codeblock lang:scala%}
+scala> import scalaz.Scalaz._ // this defines the |+| operator.
+scala> Map("a" -> 1.0, "b" -> 3.0) |+| Map("a" -> -1.0)
+res0: scala.collection.immutable.Map[String,Double] = Map(a -> 0.0, b -> 3.0)
+{%endcodeblock%}
+
+We can also take advantage of the `reduce` method to do this:
+
+{%codeblock lang:scala%}
+scala> List(Map("a" -> 1.0, "b" -> 3.0), Map("a" -> -1.0)).reduce(_ |+| _)
+res1: scala.collection.immutable.Map[String,Double] = Map(a -> 0.0, b -> 3.0)
+{%endcodeblock%}
+
+If you can define your problem as a Monoid, it becomes trivial to compute, and trivial to parallelise too. Remember, associative functions can be batched and executed in any order.
+
+Hopefully it is becoming clear why this is useful. If you want to add Integers together, most languages already include basic addition. However, Monoids can potentially be written for any type of data. As long as you define `identity` and `associative`, they can do anything you want!
+
