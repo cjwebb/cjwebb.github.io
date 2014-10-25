@@ -3,7 +3,7 @@ layout: post
 title: "Akka Camel and ActiveMQ"
 date: 2013-09-01 07:00
 comments: true
-categories: scala, mq
+categories: scala mq
 ---
 
 
