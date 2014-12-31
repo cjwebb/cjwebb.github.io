@@ -1,0 +1,64 @@
+---
+layout: post
+title: "#Code2014"
+date: 2014-12-31 07:00
+comments: true
+---
+
+As the end of the year approaches, Twitter has a hash-tag named [#Code2014](https://twitter.com/search?src=typd&q=%23code2014) that encourages people to tweet which programming languages they've been using over the last 12 months.
+
+<blockquote class="twitter-tweet" lang="en"><p><a href="https://twitter.com/hashtag/code2014?src=hash">#code2014</a> : Scala, Clojure, Haskell, Java, JavaScript, Python, Golang, Lua, Racket (and also read some Elixir &amp; Erlang books)</p>&mdash; Colin Webb (@colinjwebb) <a href="https://twitter.com/colinjwebb/status/549941162715660288">December 30, 2014</a></blockquote>
+<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+I joined in, but afterwards felt compelled to explain my thoughts on each in more than 140 characters. Hence this blog post.
+
+### Scala
+My main language, and the one I am gainly employed to write in. I found myself at the Scala Exchange conference again this year, and was pleasantly surprised by the attention that [Scalaz](https://github.com/scalaz/scalaz) was receiving. A lot of people were still unconvinced, but the Scalaz talks were very well attended.
+
+I have also found myself immersed in [Twitter's Scala-Ecosystem](http://monkey.org/~marius/funsrv.pdf) in the last quarter of the year. I'm thoroughly enjoying it. I have become more convinced that Akka is middleware, and Futures (rather than Actors) are more than sufficient for the vast majority of use-cases.
+
+### Java
+First-class functions are so incredibly versatile, that I now get frustrated when using Java.
+
+On a related note, this tweet amused me this year:
+<blockquote class="twitter-tweet" lang="en"><p>OH: &quot;But functional programming is too complicated.&quot; <a href="http://t.co/ksPeGgvMgE">pic.twitter.com/ksPeGgvMgE</a></p>&mdash; Bryan Maass (@escherize) <a href="https://twitter.com/escherize/status/546812640387809280">December 21, 2014</a></blockquote>
+<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+For a greenfield project, I'm not sure why I would ever choose Java over Scala again.
+
+### Haskell
+It has been said that Scalaz is a gateway drug from Scala to Haskell, but it is the blurred lines between OOP and FP in Scala that occasionally irritate me. As a pure language, Haskell will hopefully not have the same kind of problems. I have now finally finished reading [LYAHFGG](http://learnyouahaskell.com/) and I will start writing more things in Haskell next year. 
+
+### Clojure
+I was incredibly excited by Clojure at the beginning of the year, but my excitement is beginning to wane. I would love to love Clojure; the collections libraries are magnificent, it is incredibly concise, and the premise of [s-expressions](http://en.wikipedia.org/wiki/S-expression) is compelling. However, the lack of static typing constantly annoys me. [Typed Clojure](https://github.com/clojure/core.typed) and/or [Prismatic Schema](https://github.com/Prismatic/schema) may alleviate my concerns though. I need to spend more time investigating them.
+
+### Racket
+I have been working my way through [The Little Schemer](http://www.amazon.co.uk/The-Little-Schemer-Daniel-Friedman/dp/0262560992), and apparently they had renamed Scheme to Racket.
+I'm not convinced it is as nice as Clojure, but might be worth investigating [Typed Racket](http://docs.racket-lang.org/ts-guide/) if the libraries to provide typing in Clojure don't turn out very well.
+
+### JavaScript
+JavaScript is still the only realistic choice when writing for the browser, which means that it will be necessary for years to come. I spent a lot more time using it this year, having written both client-side and server-side JavaScript over the past twelve months.
+
+I also re-read [JavaScript: The Good Parts](http://www.amazon.co.uk/JavaScript-Good-Parts-Douglas-Crockford/dp/0596517742), shortly followed by the excellent [Functional JavaScript](http://www.amazon.co.uk/Functional-JavaScript-Introducing-Programming-Underscore-js/dp/1449360726). The latter shows that JavaScript could actually be a very nice language, if everyone followed the same path.
+
+The "Good Parts" are constantly shrinking though, as Douglas Crockford revised his advice: 
+
+<blockquote class="twitter-tweet" lang="en"><p>Doug Crockford has stopped using &quot;this&quot;, null and falsiness in JS - fantastic advice. <a href="https://twitter.com/hashtag/fullstackcon?src=hash">#fullstackcon</a> <a href="http://t.co/nGfAsj5cpm">pic.twitter.com/nGfAsj5cpm</a></p>&mdash; James Pamplin (@pampo) <a href="https://twitter.com/pampo/status/525208703197523968">October 23, 2014</a></blockquote>
+<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+It might be nice to see a new CoffeScript-esque JavaScript compiler that errors if you don't use the Good Parts. Either that, or I need to spend time having a proper look at [ClojureScript](https://github.com/clojure/clojurescript) and [PureScript](http://www.purescript.org/).
+
+### Python
+Python is my default scripting language. I enjoyed [PayPal debunking some myths of Enterprise Python](https://www.paypal-engineering.com/2014/12/10/10-myths-of-enterprise-python/), but Python is slow and lacks good concurrency support in comparison to Scala.
+
+### Golang
+I have written a couple of utilities and one website in Golang this year. It could potentially replace Python as my default "operations" language once I learn more of the standard library.
+
+It is annoying that it doesn't have a `map` function though, and without immutable data structures, I probably won't ever trust it to build anything complicated.
+
+### Lua
+Lua is a language I will spend more quality time with in 2015. Having previously worked with Lua when embedding it in Redis, I was excited to discover [OpenResty](http://openresty.org/) and being able to embed it into NGINX. I also want to investigate using [Lua for CUDA GPU Programming](http://willcrichton.github.io/terracuda/).
+
+## More In 2015?
+Aside from those already listed, I need to spend some time with Erlang next year. I have now read a couple of books about it (including the excellent [Learn You Some Erlang](http://learnyousomeerlang.com/)), and I really need to write some to experience it firsthand.
+
