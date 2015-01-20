@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: agile | cjwebb.github.io]]></title>
+  <link href="http://cjwebb.github.io/blog/categories/agile/atom.xml" rel="self"/>
+  <link href="http://cjwebb.github.io/"/>
+  <updated>2015-01-20T19:12:41+00:00</updated>
+  <id>http://cjwebb.github.io/</id>
+  <author>
+    <name><![CDATA[Colin Webb]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Mock Responses and Iterate]]></title>
+    <link href="http://cjwebb.github.io/blog/2015/01/20/canned-responses/"/>
+    <updated>2015-01-20T19:00:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2015/01/20/canned-responses</id>
+    <content type="html"><![CDATA[<p>&lsquo;Agile&rsquo; may now be an overloaded term abused by all kinds of people, but <a href="http://agilemanifesto.org/">the original manifesto</a> is actually still quite relevant. The second point is:</p>
+
+<blockquote><p>Working software over comprehensive documentation</p></blockquote>
+
+<p>This is useful to embrace in many circumstances, and can be expanded to:</p>
+
+<blockquote><p>You should intially favour building software over documenting it. Comprehensive documentation can come later.</p></blockquote>
+
+<p>I have used the following formula for the last few internal APIs I have worked on, and it makes for fun, fast, and collaborative development:</p>
+
+<ol>
+<li>Write API layer that returns mock responses</li>
+<li>Deploy it</li>
+<li>Solicit feedback from those consuming the API</li>
+<li>Make changes to API layer to address feedback</li>
+<li>Repeat</li>
+</ol>
+
+
+<p>A mock-response is one that does not change, even when API parameters do. It is hardcoded. If you request <code>GET /users/123</code> you get the same data as when requesting <code>GET /users/456</code>.</p>
+
+<p>The point is to get something deployed as quickly as possible, and get feedback on it. When the API is more stable, the mock-responses can become dynamic and then persisted. Soliciting feedback is the highest priority until then. Nobody can write the perfect API the first time, and receiving and responding to feedback as early as possible saves development time later.</p>
+
+<h2>Tools</h2>
+
+<p>There are several tools available to help you develop an API and iterate upon it. <a href="http://wiremock.org/">WireMock</a> can be configured with a routes file, and mock-responses, and can easily run <a href="http://wiremock.org/running-standalone.html">in standalone mode</a>. Just edit a couple of files, and deploy!</p>
+
+<p>If deployment is a problem, check out <a href="https://getsandbox.com/">getsandbox.com</a>. They provide a JavaScript sandbox to easily return some mock-responses.</p>
+]]></content>
+  </entry>
+  
+</feed>
