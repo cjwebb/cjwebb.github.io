@@ -4,7 +4,7 @@
   <title><![CDATA[Category: scala | cjwebb.github.io]]></title>
   <link href="http://cjwebb.github.io/blog/categories/scala/atom.xml" rel="self"/>
   <link href="http://cjwebb.github.io/"/>
-  <updated>2015-01-20T19:12:41+00:00</updated>
+  <updated>2015-02-02T19:49:58+00:00</updated>
   <id>http://cjwebb.github.io/</id>
   <author>
     <name><![CDATA[Colin Webb]]></name>
@@ -12,6 +12,79 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[ScalaTest and Twitter Futures]]></title>
+    <link href="http://cjwebb.github.io/blog/2015/02/02/scalatest-futures/"/>
+    <updated>2015-02-02T19:45:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2015/02/02/scalatest-futures</id>
+    <content type="html"><![CDATA[<p>Scala has nice abstractions for asynchronous code. However, writing tests for that code sometimes results in an ugly, unreadable mess. Fortunately, ScalaTest has built-in support for testing Futures, in addition to utilities for other types of asynchronous testing, such as polling and test-probes.</p>
+
+<h2>org.scalatest.concurrent.Futures</h2>
+
+<p>ScalaTest has <a href="http://doc.scalatest.org/2.0/#org.scalatest.concurrent.Futures">a trait named Futures</a> which defines functions such as <code>whenReady</code>, and other goodies like a <code>futureValue</code> method to help your async tests become terser. However, ScalaTest only comes with support for the standard-library Futures. To use them, mixin <code>org.scalatest.concurrent.ScalaFutures</code>.</p>
+
+<p>If, currently like me, you&rsquo;re using <a href="https://twitter.github.io/finagle/guide/Futures.html#futures">Twitter Futures</a>, then you need to define your own support for them. Luckily, it is quite easy to define support for any Futures library.</p>
+
+<p>Behold a TwitterFutures trait:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">com.twitter.util.</span><span class="o">{</span><span class="nc">Throw</span><span class="o">,</span> <span class="nc">Return</span><span class="o">}</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.concurrent.Futures</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">trait</span> <span class="nc">TwitterFutures</span> <span class="k">extends</span> <span class="nc">Futures</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">import</span> <span class="nn">scala.language.implicitConversions</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">implicit</span> <span class="k">def</span> <span class="n">convertTwitterFuture</span><span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s">&quot;twitterFuture:%20com.twitter.util.Future[T]&quot;</span><span class="o">&gt;</span><span class="n">T</span><span class="o">&lt;/</span><span class="n">a</span><span class="k">&gt;:</span> <span class="nc">FutureConcept</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="o">=&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">new</span> <span class="nc">FutureConcept</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">override</span> <span class="k">def</span> <span class="n">eitherValue</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">T</span><span class="o">]]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">twitterFuture</span><span class="o">.</span><span class="n">poll</span><span class="o">.</span><span class="n">map</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">case</span> <span class="nc">Return</span><span class="o">(</span><span class="n">o</span><span class="o">)</span> <span class="o">=&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">o</span><span class="o">)</span>
+</span><span class='line'>      <span class="k">case</span> <span class="nc">Throw</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>  <span class="o">=&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="nc">Left</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="k">override</span> <span class="k">def</span> <span class="n">isCanceled</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+</span><span class='line'>  <span class="k">override</span> <span class="k">def</span> <span class="n">isExpired</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>You may also have to define an implicit <code>PatienceConfig</code> for your tests as the default settings will timeout after 150 milliseconds.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">implicit</span> <span class="k">val</span> <span class="n">asyncConfig</span> <span class="k">=</span> <span class="nc">PatienceConfig</span><span class="o">(</span><span class="n">timeout</span> <span class="k">=</span> <span class="n">scaled</span><span class="o">(</span><span class="nc">Span</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="nc">Seconds</span><span class="o">)))</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<h2>Polling?</h2>
+
+<p>Strangely, ScalaTest chooses to poll futures, despite both Scala and Twitter Futures coming with <code>Await</code> functions that handle timeouts. Using that as a starting point would have seemed more sensible to me. However, I&rsquo;m not the author of a successful Scala testing library, and I&rsquo;m sure that author <a href="http://twitter.com/bvenners">Bill Venners</a> had a reason. However, it is worth noting.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Monoids]]></title>
@@ -790,321 +863,6 @@ Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepend
 <h2>Conclusion</h2>
 
 <p>We have sent messages through ActiveMQ using Akka-Camel, all in about 40 lines of code. A working example can be <a href="https://github.com/cjwebb/blog-code/blob/master/akka-camel-and-actimemq/src/main/scala/AkkaCamelAndActiveMQ.scala" title="Github codez">viewed on Github</a>. As it is possible for our actors to hide their implementation from those around them, ActiveMQ can be worked into a system using Akka without much hassle at all.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Testing in Scala with DSLs]]></title>
-    <link href="http://cjwebb.github.io/blog/2013/07/20/testing-in-scala-with-dsls/"/>
-    <updated>2013-07-20T12:00:00+01:00</updated>
-    <id>http://cjwebb.github.io/blog/2013/07/20/testing-in-scala-with-dsls</id>
-    <content type="html"><![CDATA[<p>Using a DSL to write a test can prove to be useful, especially when there are lots of prerequisites, or the problem is complex. Having a test that is incredibly readable reduces complexity overhead and aids reader comprehension. Any tests that require the reader to retain a mental map could benefit from a DSL.</p>
-
-<p>It is worth experimenting to see what advantages a DSL provides to your tests. If your tests are short and readable without, it will be a waste of time trying to use a DSL.</p>
-
-<h2>What is a DSL?</h2>
-
-<p><a href="http://en.wikipedia.org/wiki/Domain-specific_language">The Wikipedia article says:</a></p>
-
-<blockquote><p>A domain-specific language (DSL) is a type of programming language or specification language in software development and domain engineering dedicated to a particular problem domain, a particular problem representation technique, and/or a particular solution technique.</p></blockquote>
-
-<p>The definition of a DSL makes it quite clear that a DSL is tailored to fit a particular problem. The article also explains that a DSL should be far more expressive than is achievable by a general purpose language, and that they should be as concise a definition as possible.</p>
-
-<blockquote><p>What is the most concise, readable way of expressing my problem?</p></blockquote>
-
-<p>It is often best to aim for natural language. Modeling the problem this way hugely increases readability, and has the benefit that anyone can understand it. Many people start using symbols to represent the domain, but this further complicates matters.</p>
-
-<p>For example, which of the following two lines is the most understandable?
-<div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>alice ~> bob
-</span><span class='line'>alice isFriendsWith bob</span></code></pre></td></tr></table></div></figure></notextile></div></p>
-
-<p>For a newcomer to the code, the symbol&rsquo;s meaning will have to be looked up. However, isFriendsWith is a concept familiar to any English speaker over the age of five. Always ask yourself, what is the most concise, readable way of expressing my problem?</p>
-
-<h2>Code Under Test</h2>
-
-<p>To demonstrate testing with a DSL, let&rsquo;s read some tests. They cover the most ubiquitous of use cases in the modern web: a social friends graph.</p>
-
-<p>What is the specification of our FriendsGraph?
-<div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>FriendsGraphSpec:
-</span><span class='line'> &ndash; can store and retrieve people
-</span><span class='line'> &ndash; can store a friend
-</span><span class='line'> &ndash; retrieves friends, first in last out</span></code></pre></td></tr></table></div></figure></notextile></div></p>
-
-<p>The tests, and the code under test, are <a href="http://github.com">available on Github</a>.</p>
-
-<h3>Test Without a DSL</h3>
-
-<p>This is probably what a lot of tests look like before refactoring. There is room for improvement, but the test itself is fairly readable.</p>
-
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>FriendsGraphSpec.scala </span></figcaption>
- <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.matchers.ShouldMatchers</span>
-</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.</span><span class="o">{</span><span class="nc">OneInstancePerTest</span><span class="o">,</span> <span class="nc">FreeSpec</span><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">class</span> <span class="nc">FriendsGraphSpec</span> <span class="k">extends</span> <span class="nc">FreeSpec</span> <span class="k">with</span> <span class="nc">ShouldMatchers</span> <span class="k">with</span> <span class="nc">OneInstancePerTest</span> <span class="o">{</span>
-</span><span class='line'>  <span class="k">val</span> <span class="n">graph</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">FriendsGraph</span><span class="o">()&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">can</span> <span class="n">store</span> <span class="n">and</span> <span class="n">retrieve</span> <span class="n">people</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="n">in</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">getPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="n">alice</span><span class="o">))</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">can</span> <span class="n">store</span> <span class="n">a</span> <span class="n">friend</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="n">in</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="k">val</span> <span class="n">bob</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;bob-id&quot;</span><span class="o">,</span> <span class="s">&quot;Bob&quot;</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">bob</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">getFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="n">bob</span><span class="o">))</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">retrieves</span> <span class="n">friends</span><span class="o">,</span> <span class="n">first</span> <span class="n">in</span> <span class="n">last</span> <span class="n">out</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="n">in</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="k">val</span> <span class="n">bob</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;bob-id&quot;</span><span class="o">,</span> <span class="s">&quot;Bob&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="k">val</span> <span class="n">charlie</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;charlie-id&quot;</span><span class="o">,</span> <span class="s">&quot;Charlie&quot;</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">bob</span><span class="o">)</span>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">charlie</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">charlie</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">getFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="n">charlie</span><span class="o">,</span> <span class="n">bob</span><span class="o">))</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
-
-<h3>Test with DSL</h3>
-
-<p>Notable improvements are shown after refactoring using a DSL. The number of lines of code has gone up slightly, but crucially, the tests are expressed in far fewer lines. The last one is now expressed in four lines instead of nine.</p>
-
-<p>The tests are also now written in terms that everyone can understand. People are now referred to purely by name, and relationships between them are clearly expressed.</p>
-
-<p>The example below uses the <a href="http://www.artima.com/weblogs/viewpost.jsp?thread=179766" title="Pimp my Library by Martin Odersky">Pimp My Library</a> pattern to convert a Person into a PersonDSL. It is equally valid to not use implicits, and simply return a case class of PersonDSL from the createPerson method. The choice of how to construct the DSL is down to personal preference, and coding conventions. An example of writing a DSL without using implicits is <a href="http://github.com">available in the example code here</a>.</p>
-
-<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>FriendsGraphSpecWithDSL.scala </span></figcaption>
- <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.matchers.ShouldMatchers</span>
-</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.</span><span class="o">{</span><span class="nc">OneInstancePerTest</span><span class="o">,</span> <span class="nc">FreeSpec</span><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">class</span> <span class="nc">FriendsGraphSpecWithDSL</span> <span class="k">extends</span> <span class="nc">FreeSpec</span> <span class="k">with</span> <span class="nc">ShouldMatchers</span> <span class="k">with</span> <span class="nc">OneInstancePerTest</span> <span class="o">{</span>
-</span><span class='line'>  <span class="k">val</span> <span class="n">graph</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">FriendsGraph</span><span class="o">()&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">can</span> <span class="n">store</span> <span class="n">and</span> <span class="n">retrieve</span> <span class="n">people</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="n">in</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">_alice</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">getPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="n">alice</span><span class="o">)</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">can</span> <span class="n">store</span> <span class="n">a</span> <span class="n">friend</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="n">in</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">val</span> <span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="nc">_alice</span><span class="o">,</span> <span class="nc">_bob</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">alice</span> <span class="n">befriends</span> <span class="n">bob</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">alice</span> <span class="n">isFriendsWith</span> <span class="n">bob</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">retrieves</span> <span class="n">friends</span><span class="o">,</span> <span class="n">first</span> <span class="n">in</span> <span class="n">last</span> <span class="n">out</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="n">in</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">val</span> <span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">,</span> <span class="n">charlie</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="nc">_alice</span><span class="o">,</span> <span class="nc">_bob</span><span class="o">,</span> <span class="nc">_charlie</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">alice</span> <span class="n">befriends</span> <span class="n">bob</span>
-</span><span class='line'><span class="n">alice</span> <span class="n">befriends</span> <span class="n">charlie</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">alice</span> <span class="n">isFriendsWith</span> <span class="o">(</span><span class="n">charlie</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span><span class="n">alice</span><span class="o">()</span> <span class="k">=</span> <span class="n">createPerson</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">alice</span><span class="o">-</span><span class="n">id</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;,</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="nc">Alice</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)</span>
-</span><span class='line'>  <span class="k">def</span> <span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span><span class="n">bob</span><span class="o">()</span> <span class="k">=</span> <span class="n">createPerson</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">bob</span><span class="o">-</span><span class="n">id</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;,</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="nc">Bob</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)</span>
-</span><span class='line'>  <span class="k">def</span> <span class="nc">_charlie</span><span class="o">()</span> <span class="k">=</span> <span class="n">createPerson</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">charlie</span><span class="o">-</span><span class="n">id</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;,</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="nc">Charlie</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="n">createPerson</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">=</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">val</span> <span class="n">person</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">)</span>
-</span><span class='line'><span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">person</span><span class="o">)</span>
-</span><span class='line'><span class="n">person</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="n">getPerson</span><span class="o">(</span><span class="n">person</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span> <span class="k">=</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">graph</span><span class="o">.</span><span class="n">getPerson</span><span class="o">(</span><span class="n">person</span><span class="o">.</span><span class="n">id</span><span class="o">).</span><span class="n">getOrElse</span><span class="o">(</span><span class="n">fail</span><span class="o">(</span><span class="s">&quot;could not find person: &quot;</span> <span class="o">+</span> <span class="n">person</span><span class="o">))</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">implicit</span> <span class="k">def</span> <span class="n">pimpPerson</span><span class="o">(</span><span class="n">person</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span><span class="k">:</span> <span class="kt">PersonDSL</span> <span class="o">=</span> <span class="nc">PersonDSL</span><span class="o">(</span><span class="n">person</span><span class="o">)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">case</span> <span class="k">class</span> <span class="nc">PersonDSL</span><span class="o">(</span><span class="n">person</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">def</span> <span class="n">befriends</span><span class="o">(</span><span class="n">friend</span><span class="k">:</span> <span class="kt">PersonDSL</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>  <span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">person</span><span class="o">,</span> <span class="n">friend</span><span class="o">.</span><span class="n">person</span><span class="o">)</span>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'><span class="k">def</span> <span class="n">isFriendsWith</span><span class="o">(</span><span class="n">friends</span><span class="k">:</span> <span class="kt">PersonDSL*</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>  <span class="n">graph</span><span class="o">.</span><span class="n">getFriends</span><span class="o">(</span><span class="n">person</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="n">friends</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">person</span><span class="o">))</span>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}</span>
-</span><span class='line'><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
-
-<h2>Conclusion</h2>
-
-<p>DSLs have the ability to make tests easier to understand. However, as with anything, they are not applicable to all circumstances. It is but one technique. The example provided was a good fit as friendships between people are best understood, not as adjacency lists, but as actions and relationships.</p>
-
-<p>Next time you start writing a complicated test, try altering your view on it and consider how it would read as a DSL. It may be compelling.</p>
 ]]></content>
   </entry>
   

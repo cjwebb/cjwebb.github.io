@@ -4,7 +4,7 @@
   <title><![CDATA[cjwebb.github.io]]></title>
   <link href="http://cjwebb.github.io/atom.xml" rel="self"/>
   <link href="http://cjwebb.github.io/"/>
-  <updated>2015-01-20T19:12:41+00:00</updated>
+  <updated>2015-02-02T19:49:58+00:00</updated>
   <id>http://cjwebb.github.io/</id>
   <author>
     <name><![CDATA[Colin Webb]]></name>
@@ -12,6 +12,75 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[ScalaTest and Twitter Futures]]></title>
+    <link href="http://cjwebb.github.io/blog/2015/02/02/scalatest-futures/"/>
+    <updated>2015-02-02T19:45:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2015/02/02/scalatest-futures</id>
+    <content type="html"><![CDATA[<p>Scala has nice abstractions for asynchronous code. However, writing tests for that code sometimes results in an ugly, unreadable mess. Fortunately, ScalaTest has built-in support for testing Futures, in addition to utilities for other types of asynchronous testing, such as polling and test-probes.</p>
+
+<h2>org.scalatest.concurrent.Futures</h2>
+
+<p>ScalaTest has <a href="http://doc.scalatest.org/2.0/#org.scalatest.concurrent.Futures">a trait named Futures</a> which defines functions such as <code>whenReady</code>, and other goodies like a <code>futureValue</code> method to help your async tests become terser. However, ScalaTest only comes with support for the standard-library Futures. To use them, mixin <code>org.scalatest.concurrent.ScalaFutures</code>.</p>
+
+<p>If, currently like me, you&rsquo;re using <a href="https://twitter.github.io/finagle/guide/Futures.html#futures">Twitter Futures</a>, then you need to define your own support for them. Luckily, it is quite easy to define support for any Futures library.</p>
+
+<p>Behold a TwitterFutures trait:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">com.twitter.util.</span><span class="o">{</span><span class="nc">Throw</span><span class="o">,</span> <span class="nc">Return</span><span class="o">}</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.concurrent.Futures</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">trait</span> <span class="nc">TwitterFutures</span> <span class="k">extends</span> <span class="nc">Futures</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">import</span> <span class="nn">scala.language.implicitConversions</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">def</span> <span class="n">convertTwitterFuture</span><span class="o">[</span><span class="kt">T</span><span class="o">](</span><span class="n">twitterFuture</span><span class="k">:</span> <span class="kt">com.twitter.util.Future</span><span class="o">[</span><span class="kt">T</span><span class="o">])</span><span class="k">:</span> <span class="kt">FutureConcept</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>    <span class="k">new</span> <span class="nc">FutureConcept</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">eitherValue</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">T</span><span class="o">]]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">twitterFuture</span><span class="o">.</span><span class="n">poll</span><span class="o">.</span><span class="n">map</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">case</span> <span class="nc">Return</span><span class="o">(</span><span class="n">o</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">o</span><span class="o">)</span>
+</span><span class='line'>          <span class="k">case</span> <span class="nc">Throw</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>  <span class="k">=&gt;</span> <span class="nc">Left</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">isCanceled</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">isExpired</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You may also have to define an implicit <code>PatienceConfig</code> for your tests as the default settings will timeout after 150 milliseconds.</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">implicit</span> <span class="k">val</span> <span class="n">asyncConfig</span> <span class="k">=</span> <span class="nc">PatienceConfig</span><span class="o">(</span><span class="n">timeout</span> <span class="k">=</span> <span class="n">scaled</span><span class="o">(</span><span class="nc">Span</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="nc">Seconds</span><span class="o">)))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Polling?</h2>
+
+<p>Strangely, ScalaTest chooses to poll futures, despite both Scala and Twitter Futures coming with <code>Await</code> functions that handle timeouts. Using that as a starting point would have seemed more sensible to me. However, I&rsquo;m not the author of a successful Scala testing library, and I&rsquo;m sure that author <a href="http://twitter.com/bvenners">Bill Venners</a> had a reason. However, it is worth noting.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Mock Responses and Iterate]]></title>
