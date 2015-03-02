@@ -9,7 +9,7 @@
   <meta name="author" content="Colin Webb">
 
   
-  <meta name="description" content="Scala has nice abstractions for asynchronous code. However, writing tests for that code sometimes results in an ugly, unreadable mess. Fortunately, &hellip;">
+  <meta name="description" content="Cassandra Time-To-Live (TTL) is decribed in the Datastax documentation. This blog post briefly explores it to demonstrate that TTL is set per column &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -77,6 +77,144 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/03/02/cassandra-ttl-is-per-column/">Cassandra TTL Is Per Column</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-03-02T11:30:00+00:00" pubdate data-updated="true">Mar 2<span>nd</span>, 2015</time>
+        
+         | <a href="/blog/2015/03/02/cassandra-ttl-is-per-column/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><a href="http://cassandra.apache.org/">Cassandra</a> Time-To-Live (TTL) is decribed in the <a href="http://www.datastax.com/documentation/cql/3.0/cql/cql_using/use_ttl_t.html">Datastax documentation</a>. This blog post briefly explores it to demonstrate that TTL is set per column, and not per row.</p>
+
+<p>We start by recreating the example given in the documentation. We create a keyspace, a table, and insert some data into it. The TTL value is much lower than the offical documentation, as I don&rsquo;t want to wait 24 hours before the TTL runs out.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cqlsh> CREATE KEYSPACE excelsior WITH REPLICATION =
+</span><span class='line'>         { 'class' : 'SimpleStrategy', 'replication_factor': 1 }
+</span><span class='line'>
+</span><span class='line'>cqlsh> CREATE TABLE excelsior.clicks (
+</span><span class='line'>         userid uuid,
+</span><span class='line'>         url text,
+</span><span class='line'>         date timestamp,
+</span><span class='line'>         name text,
+</span><span class='line'>         PRIMARY KEY (userid, url)
+</span><span class='line'>       );
+</span><span class='line'>
+</span><span class='line'>cqlsh> INSERT INTO excelsior.clicks (
+</span><span class='line'>         userid, url, date, name)
+</span><span class='line'>       VALUES (
+</span><span class='line'>         3715e600-2eb0-11e2-81c1-0800200c9a66,
+</span><span class='line'>         'http://apache.org',
+</span><span class='line'>         '2013-10-09', 'Mary')
+</span><span class='line'>       USING TTL 60;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now that we have created our keyspace and table, let&rsquo;s query the TTL:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cqlsh> SELECT TTL (date), TTL (name) from excelsior.clicks;
+</span><span class='line'>
+</span><span class='line'> ttl(date) | ttl(name)
+</span><span class='line'>-----------------------
+</span><span class='line'>        52 |        52</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Insert or Update to change TTL per column</h2>
+
+<p>As demonstrated by the CQL synatx, TTL is set per column. To demonstrate this, we now insert the data again, but exclude the date.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cqlsh> INSERT INTO excelsior.clicks (
+</span><span class='line'>         userid, url, name)
+</span><span class='line'>         VALUES (
+</span><span class='line'>           3715e600-2eb0-11e2-81c1-0800200c9a66,
+</span><span class='line'>           'http://apache.org',
+</span><span class='line'>           'Mary')
+</span><span class='line'>         USING TTL 60;
+</span><span class='line'>cqlsh> SELECT TTL (date), TTL (name) from excelsior.clicks;
+</span><span class='line'>
+</span><span class='line'> ttl(date) | ttl(name)
+</span><span class='line'>-----------+-----------
+</span><span class='line'>        11 |        49</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If we then wait 11 seconds, we can see that different columns can expire at different times.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cqlsh> select * from excelsior.clicks;
+</span><span class='line'>
+</span><span class='line'> userid                               | url               | date | name
+</span><span class='line'>--------------------------------------+-------------------+------+------
+</span><span class='line'> 3715e600-2eb0-11e2-81c1-0800200c9a66 | http://apache.org | null | Mary</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This can come as a surprise if you&rsquo;re used to rows behaving as one single entity. If you want to update the TTL for an entire row in Cassandra, you need to either insert or update the entire row again with a new TTL.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1588,241 +1726,9 @@ Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepend
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/05/27/better-assertions-with-scalatest/">Better Assertions With ScalaTest</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-05-27T08:20:00+01:00" pubdate data-updated="true">May 27<span>th</span>, 2013</time>
-        
-         | <a href="/blog/2013/05/27/better-assertions-with-scalatest/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>Scala has three different frameworks for writing unit tests, JUnit, <a href="http://etorreborre.github.io/specs2/guide/org.specs2.guide.QuickStart.html" title="Specs2">Specs2</a> and <a href="http://www.scalatest.org/" title="ScalaTest">ScalaTest</a>. I have mainly been using ScalaTest since I started to learn Scala about four months ago. One of the areas I have been concentrating on is how to write good assertions. Specifically, ones that yield easily diagnosable error messages when they fail.</p>
-
-<p>Whilst tests are useful to verify that code works, their other useful quality is that of preventing regressions. With tests, one can refactor and modify code without fear. Often these changes will cause an existing test to fail, and we want to diagnose the regression as fast as possible.</p>
-
-<p>If you have read the <a href="http://www.scalatest.org/user_guide/writing_your_first_test" title="ScalaTest - Writing your first test">ScalaTest User Guide</a>, this example should be familiar to you:</p>
-
-<figure class='code'><figcaption><span>StackSpec.scala </span></figcaption>
- <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">collection.mutable.Stack</span>
-</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest._</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">class</span> <span class="nc">StackSpec</span> <span class="k">extends</span> <span class="nc">FlatSpec</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="s">&quot;A Stack&quot;</span> <span class="n">should</span> <span class="s">&quot;pop values in last-in-first-out order&quot;</span> <span class="n">in</span> <span class="o">{</span>
-</span><span class='line'>    <span class="k">val</span> <span class="n">stack</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
-</span><span class='line'>    <span class="n">stack</span><span class="o">.</span><span class="n">push</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
-</span><span class='line'>    <span class="n">stack</span><span class="o">.</span><span class="n">push</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>
-</span><span class='line'>    <span class="n">assert</span><span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="o">()</span> <span class="o">===</span> <span class="mi">3</span><span class="o">)</span> <span class="c1">// this will fail - should be 2</span>
-</span><span class='line'>    <span class="n">assert</span><span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="o">()</span> <span class="o">===</span> <span class="mi">1</span><span class="o">)</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>When running the test in an IDE, the error message will look like this:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>2 did not equal 3
-</span><span class='line'>org.scalatest.exceptions.TestFailedException: 2 did not equal 3
-</span><span class='line'>  at org.scalatest.Assertions$class.newAssertionFailedException(Assertions.scala:318)
-</span><span class='line'>  at StackSpec.newAssertionFailedException(StackSpec.scala:4)
-</span><span class='line'>  at org.scalatest.Assertions$class.assert(Assertions.scala:401)
-</span><span class='line'>  at StackSpec.assert(StackSpec.scala:4)
-</span><span class='line'>  at StackSpec$$anonfun$1.apply$mcV$sp(StackSpec.scala:10)
-</span><span class='line'>  ... (and many more lines)</span></code></pre></td></tr></table></div></figure>
-
-
-<p>That isn&rsquo;t too bad, but the test is just above the stacktrace, and I&rsquo;ve already highlighted the line that will fail.</p>
-
-<p>This is what you will see in your CI build, if you use SBT:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>[info] StackSpec:
-</span><span class='line'>[info] A Stack
-</span><span class='line'>[info] - should pop values in last-in-first-out order *** FAILED ***
-</span><span class='line'>[info]   2 did not equal 3 (StackSpec.scala:10)
-</span><span class='line'>[error] Failed: : Total 1, Failed 1, Errors 0, Passed 0, Skipped 0
-</span><span class='line'>[error] Failed tests:
-</span><span class='line'>[error]   StackSpec</span></code></pre></td></tr></table></div></figure>
-
-
-<p>The message that &ldquo;2 did not equal 3&rdquo; becomes more vague the further you get away from the test. If you saw that error message next week, would you remember that 2 was a value on the stack? And what does 3 have to do with it? Crucially, would your coworkers/contributors understand the failure the first time they looked at it?</p>
-
-<p>Clearly, we want an error message that will represent the problem no matter how familiar you are with the implementation of the test.</p>
-
-<p>We can use the withClue function to prepend a message:</p>
-
-<figure class='code'><figcaption><span>StackSpecWithClue.scala </span></figcaption>
- <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">collection.mutable.Stack</span>
-</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest._</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">class</span> <span class="nc">StackSpec</span> <span class="k">extends</span> <span class="nc">FlatSpec</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="s">&quot;A Stack&quot;</span> <span class="n">should</span> <span class="s">&quot;pop values in last-in-first-out order&quot;</span> <span class="n">in</span> <span class="o">{</span>
-</span><span class='line'>    <span class="k">val</span> <span class="n">stack</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
-</span><span class='line'>    <span class="n">stack</span><span class="o">.</span><span class="n">push</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
-</span><span class='line'>    <span class="n">stack</span><span class="o">.</span><span class="n">push</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>
-</span><span class='line'>    <span class="n">withClue</span><span class="o">(</span><span class="s">&quot;value popped from stack: &quot;</span><span class="o">)</span> <span class="o">{</span> <span class="n">assert</span><span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="o">()</span> <span class="o">===</span> <span class="mi">3</span><span class="o">)</span> <span class="o">}</span>
-</span><span class='line'>    <span class="n">withClue</span><span class="o">(</span><span class="s">&quot;value popped from stack: &quot;</span><span class="o">)</span> <span class="o">{</span> <span class="n">assert</span><span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="o">()</span> <span class="o">===</span> <span class="mi">1</span><span class="o">)</span> <span class="o">}</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>value popped from stack: 2 did not equal 3
-</span><span class='line'>org.scalatest.exceptions.TestFailedException: value popped from stack: 2 did not equal 3
-</span><span class='line'>  at org.scalatest.Assertions$class.newAssertionFailedException(Assertions.scala:318)
-</span><span class='line'>  at StackSpecWithClue.newAssertionFailedException(StackSpecWithClue.scala:4)
-</span><span class='line'>  at org.scalatest.Assertions$class.assert(Assertions.scala:401)
-</span><span class='line'>  at StackSpecWithClue.assert(StackSpecWithClue.scala:4)
-</span><span class='line'>  at StackSpecWithClue$$anonfun$1$$anonfun$apply$mcV$sp$1.apply$mcV$sp(StackSpecWithClue.scala:10)
-</span><span class='line'>  ... (and many more lines)</span></code></pre></td></tr></table></div></figure>
-
-
-<p>This is already better; we have some context! In an ideal world, a test would only have one assertion, and it would give us full diagnostics. At the moment, our test fails as 2 does not equal 3, but it could equally fail if the last value popped does not equal 1. It would be nicer to push some values onto the stack, pop them all off, and then make sure they were in the correct order. That could be done with one assertion, and the full context of the test could be displayed in an error message.</p>
-
-<figure class='code'><figcaption><span>StackSpecWithOneAssertion.scala </span></figcaption>
- <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">collection.mutable._</span>
-</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest._</span>
-</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.matchers.ShouldMatchers</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">class</span> <span class="nc">StackSpecWithOneAssertion</span> <span class="k">extends</span> <span class="nc">FlatSpec</span> <span class="k">with</span> <span class="nc">ShouldMatchers</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="s">&quot;A Stack&quot;</span> <span class="n">should</span> <span class="s">&quot;pop values in last-in-first-out order&quot;</span> <span class="n">in</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">val</span> <span class="n">valuesToPush</span> <span class="k">=</span> <span class="nc">Seq</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">3</span><span class="o">,</span> <span class="mi">4</span><span class="o">)</span>
-</span><span class='line'>      <span class="k">val</span> <span class="n">stack</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">Stack</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
-</span><span class='line'>      <span class="n">valuesToPush</span> <span class="n">foreach</span> <span class="o">{</span> <span class="n">v</span> <span class="k">=&gt;</span> <span class="n">stack</span><span class="o">.</span><span class="n">push</span><span class="o">(</span><span class="n">v</span><span class="o">)</span> <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="k">val</span> <span class="n">valuesPopped</span> <span class="k">=</span> <span class="nc">ArrayBuffer</span><span class="o">[</span><span class="kt">Int</span><span class="o">]()</span>
-</span><span class='line'>      <span class="k">while</span> <span class="o">(</span><span class="n">stack</span><span class="o">.</span><span class="n">nonEmpty</span><span class="o">)</span> <span class="n">valuesPopped</span> <span class="o">+=</span> <span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="o">()</span>
-</span><span class='line'>      <span class="n">valuesPopped</span><span class="o">.</span><span class="n">update</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">5</span><span class="o">)</span> <span class="c1">// to fail the test</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="n">withClue</span><span class="o">(</span><span class="s">&quot;values popped from stack: &quot;</span><span class="o">)</span> <span class="o">{</span> <span class="n">valuesPopped</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="n">valuesToPush</span><span class="o">.</span><span class="n">reverse</span><span class="o">)</span> <span class="o">}</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>order of values popped from stack: ArrayBuffer(5, 3, 2, 1) was not equal to ArrayBuffer(4, 3, 2, 1)
-</span><span class='line'>org.scalatest.exceptions.TestFailedException: values popped from stack: ArrayBuffer(5, 3, 2, 1) was not equal to ArrayBuffer(4, 3, 2, 1)
-</span><span class='line'>  at org.scalatest.matchers.ClassicMatchers$class.newTestFailedException(Matchers.scala:155)
-</span><span class='line'>  at StackSpecWithOneAssertion.newTestFailedException(StackSpecWithOneAssertion.scala:5)
-</span><span class='line'>  at org.scalatest.matchers.ShouldMatchers$ShouldMethodHelper$.shouldMatcher(ShouldMatchers.scala:884)
-</span><span class='line'>  at org.scalatest.matchers.ShouldMatchers$SeqShouldWrapper.should(ShouldMatchers.scala:1737)
-</span><span class='line'>  at StackSpecWithOneAssertion$$anonfun$1$$anonfun$apply$mcV$sp$1.apply$mcV$sp(StackSpecWithOneAssertion.scala:17)
-</span><span class='line'>  ... (and many more lines)</span></code></pre></td></tr></table></div></figure>
-
-
-<p>We now have context for the failure, and full diagnostics. If any of the numbers come out in the wrong order, we will be able to tell &ndash; not just the first failure.</p>
-
-<p>You should always try to give good failure messages. If you spend an extra minute ensuring it is readable and comprehensive, you&rsquo;ll get that time back when the test fails. Also remember, it may not be you trying to figure out why the assertion failed!</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
+    
+      <a class="prev" href="/blog/page/2/">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -1833,6 +1739,10 @@ Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepend
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/03/02/cassandra-ttl-is-per-column/">Cassandra TTL Is Per Column</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2015/02/02/scalatest-futures/">ScalaTest and Twitter Futures</a>
@@ -1848,10 +1758,6 @@ Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepend
     
       <li class="post">
         <a href="/blog/2014/10/02/monoids/">Monoids</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/07/16/aggregation-services-in-nodejs/">Aggregation Services in Node.js</a>
       </li>
     
   </ul>

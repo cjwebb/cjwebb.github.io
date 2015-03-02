@@ -4,7 +4,7 @@
   <title><![CDATA[cjwebb.github.io]]></title>
   <link href="http://cjwebb.github.io/atom.xml" rel="self"/>
   <link href="http://cjwebb.github.io/"/>
-  <updated>2015-02-02T19:49:58+00:00</updated>
+  <updated>2015-03-02T11:14:10+00:00</updated>
   <id>http://cjwebb.github.io/</id>
   <author>
     <name><![CDATA[Colin Webb]]></name>
@@ -12,6 +12,115 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Cassandra TTL Is Per Column]]></title>
+    <link href="http://cjwebb.github.io/blog/2015/03/02/cassandra-ttl-is-per-column/"/>
+    <updated>2015-03-02T11:30:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2015/03/02/cassandra-ttl-is-per-column</id>
+    <content type="html"><![CDATA[<p><a href="http://cassandra.apache.org/">Cassandra</a> Time-To-Live (TTL) is decribed in the <a href="http://www.datastax.com/documentation/cql/3.0/cql/cql_using/use_ttl_t.html">Datastax documentation</a>. This blog post briefly explores it to demonstrate that TTL is set per column, and not per row.</p>
+
+<p>We start by recreating the example given in the documentation. We create a keyspace, a table, and insert some data into it. The TTL value is much lower than the offical documentation, as I don&rsquo;t want to wait 24 hours before the TTL runs out.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cqlsh> CREATE KEYSPACE excelsior WITH REPLICATION =
+</span><span class='line'>         { 'class' : 'SimpleStrategy', 'replication_factor': 1 }
+</span><span class='line'>
+</span><span class='line'>cqlsh> CREATE TABLE excelsior.clicks (
+</span><span class='line'>         userid uuid,
+</span><span class='line'>         url text,
+</span><span class='line'>         date timestamp,
+</span><span class='line'>         name text,
+</span><span class='line'>         PRIMARY KEY (userid, url)
+</span><span class='line'>       );
+</span><span class='line'>
+</span><span class='line'>cqlsh> INSERT INTO excelsior.clicks (
+</span><span class='line'>         userid, url, date, name)
+</span><span class='line'>       VALUES (
+</span><span class='line'>         3715e600-2eb0-11e2-81c1-0800200c9a66,
+</span><span class='line'>         'http://apache.org',
+</span><span class='line'>         '2013-10-09', 'Mary')
+</span><span class='line'>       USING TTL 60;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now that we have created our keyspace and table, let&rsquo;s query the TTL:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cqlsh> SELECT TTL (date), TTL (name) from excelsior.clicks;
+</span><span class='line'>
+</span><span class='line'> ttl(date) | ttl(name)
+</span><span class='line'>-----------------------
+</span><span class='line'>        52 |        52</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Insert or Update to change TTL per column</h2>
+
+<p>As demonstrated by the CQL synatx, TTL is set per column. To demonstrate this, we now insert the data again, but exclude the date.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cqlsh> INSERT INTO excelsior.clicks (
+</span><span class='line'>         userid, url, name)
+</span><span class='line'>         VALUES (
+</span><span class='line'>           3715e600-2eb0-11e2-81c1-0800200c9a66,
+</span><span class='line'>           'http://apache.org',
+</span><span class='line'>           'Mary')
+</span><span class='line'>         USING TTL 60;
+</span><span class='line'>cqlsh> SELECT TTL (date), TTL (name) from excelsior.clicks;
+</span><span class='line'>
+</span><span class='line'> ttl(date) | ttl(name)
+</span><span class='line'>-----------+-----------
+</span><span class='line'>        11 |        49</span></code></pre></td></tr></table></div></figure>
+
+
+<p>If we then wait 11 seconds, we can see that different columns can expire at different times.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cqlsh> select * from excelsior.clicks;
+</span><span class='line'>
+</span><span class='line'> userid                               | url               | date | name
+</span><span class='line'>--------------------------------------+-------------------+------+------
+</span><span class='line'> 3715e600-2eb0-11e2-81c1-0800200c9a66 | http://apache.org | null | Mary</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This can come as a surprise if you&rsquo;re used to rows behaving as one single entity. If you want to update the TTL for an entire row in Cassandra, you need to either insert or update the entire row again with a new TTL.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[ScalaTest and Twitter Futures]]></title>

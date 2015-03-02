@@ -5,7 +5,7 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Better Assertions with ScalaTest - cjwebb.github.io</title>
+  <title>cjwebb.github.io</title>
   <meta name="author" content="Colin Webb">
 
   
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://cjwebb.github.io/blog/2013/05/27/better-assertions-with-scalatest">
+  <link rel="canonical" href="http://cjwebb.github.io/blog/page/2">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="cjwebb.github.io" type="application/atom+xml">
@@ -75,12 +75,15 @@
 </nav>
   <div id="main">
     <div id="content">
-      <div>
-<article class="hentry" role="article">
+      <div class="blog-index">
   
+  
+  
+    <article>
+      
   <header>
     
-      <h1 class="entry-title">Better Assertions With ScalaTest</h1>
+      <h1 class="entry-title"><a href="/blog/2013/05/27/better-assertions-with-scalatest/">Better Assertions With ScalaTest</a></h1>
     
     
       <p class="meta">
@@ -98,14 +101,14 @@
 
 <time datetime="2013-05-27T08:20:00+01:00" pubdate data-updated="true">May 27<span>th</span>, 2013</time>
         
-         | <a href="#disqus_thread">Comments</a>
+         | <a href="/blog/2013/05/27/better-assertions-with-scalatest/#disqus_thread">Comments</a>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>Scala has three different frameworks for writing unit tests, JUnit, <a href="http://etorreborre.github.io/specs2/guide/org.specs2.guide.QuickStart.html" title="Specs2">Specs2</a> and <a href="http://www.scalatest.org/" title="ScalaTest">ScalaTest</a>. I have mainly been using ScalaTest since I started to learn Scala about four months ago. One of the areas I have been concentrating on is how to write good assertions. Specifically, ones that yield easily diagnosable error messages when they fail.</p>
+  <div class="entry-content"><p>Scala has three different frameworks for writing unit tests, JUnit, <a href="http://etorreborre.github.io/specs2/guide/org.specs2.guide.QuickStart.html" title="Specs2">Specs2</a> and <a href="http://www.scalatest.org/" title="ScalaTest">ScalaTest</a>. I have mainly been using ScalaTest since I started to learn Scala about four months ago. One of the areas I have been concentrating on is how to write good assertions. Specifically, ones that yield easily diagnosable error messages when they fail.</p>
 
 <p>Whilst tests are useful to verify that code works, their other useful quality is that of preventing regressions. With tests, one can refactor and modify code without fear. Often these changes will cause an existing test to fail, and we want to diagnose the regression as fast as possible.</p>
 
@@ -303,67 +306,20 @@
 
 <p>You should always try to give good failure messages. If you spend an extra minute ensuring it is readable and comprehensive, you&rsquo;ll get that time back when the test fails. Also remember, it may not be you trying to figure out why the assertion failed!</p>
 </div>
-
-
-  <footer>
-    <p class="meta">
-      
   
-
-<span class="byline author vcard">Posted by <span class="fn">Colin Webb</span></span>
-
-      
-
-
-
-
-
-
-
-
   
 
 
-<time datetime="2013-05-27T08:20:00+01:00" pubdate data-updated="true">May 27<span>th</span>, 2013</time>
-      
-
-<span class="categories">
+    </article>
   
-    <a class='category' href='/blog/categories/scala/'>scala</a>
-  
-</span>
-
-
-    </p>
+  <div class="pagination">
     
-      <div class="sharing">
-  
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://cjwebb.github.io/blog/2013/05/27/better-assertions-with-scalatest/" data-via="colinjameswebb" data-counturl="http://cjwebb.github.io/blog/2013/05/27/better-assertions-with-scalatest/" >Tweet</a>
-  
-  
-  
-    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
-  
-</div>
-
+    <a href="/blog/archives">Blog Archives</a>
     
-    <p class="meta">
-      
-      
-        <a class="basic-alignment right" href="/blog/2013/07/20/testing-in-scala-with-dsls/" title="Next Post: Testing in Scala with DSLs">Testing in Scala with DSLs &raquo;</a>
-      
-    </p>
-  </footer>
-</article>
-
-  <section>
-    <h1>Comments</h1>
-    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a class="next" href="/">Newer &rarr;</a>
+    
+  </div>
 </div>
-  </section>
-
-</div>
-
 <aside class="sidebar">
   
     <section>
@@ -394,7 +350,7 @@
 </section>
 <section>
   <h1>About Me</h1>
-  <p>My name is Colin Webb, and I'm a software engineer, working in London.</p>
+  <p>My name is Colin Webb, and I&#8217;m a software engineer, working in London.</p>
 
   <p>Currently employed to code in Scala, having previously worked with Java, JavaScript and Python</p>
   <p>You can find me on Twitter <a href="http://twitter.com/colinjwebb">@colinjwebb</a>
@@ -406,7 +362,6 @@
 
   
 </aside>
-
 
     </div>
   </div>
@@ -422,10 +377,7 @@
       var disqus_shortname = 'cjwebbgithubio';
       
         
-        // var disqus_developer = 1;
-        var disqus_identifier = 'http://cjwebb.github.io/blog/2013/05/27/better-assertions-with-scalatest/';
-        var disqus_url = 'http://cjwebb.github.io/blog/2013/05/27/better-assertions-with-scalatest/';
-        var disqus_script = 'embed.js';
+        var disqus_script = 'count.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
