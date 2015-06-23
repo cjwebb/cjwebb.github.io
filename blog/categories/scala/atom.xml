@@ -4,7 +4,7 @@
   <title><![CDATA[Category: scala | cjwebb.github.io]]></title>
   <link href="http://cjwebb.github.io/blog/categories/scala/atom.xml" rel="self"/>
   <link href="http://cjwebb.github.io/"/>
-  <updated>2015-03-02T11:14:10+00:00</updated>
+  <updated>2015-06-23T19:44:18+01:00</updated>
   <id>http://cjwebb.github.io/</id>
   <author>
     <name><![CDATA[Colin Webb]]></name>
@@ -12,6 +12,105 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Using Play-Framework's PathBindable]]></title>
+    <link href="http://cjwebb.github.io/blog/2015/06/23/play-framework-path-binders/"/>
+    <updated>2015-06-23T19:45:00+01:00</updated>
+    <id>http://cjwebb.github.io/blog/2015/06/23/play-framework-path-binders</id>
+    <content type="html"><![CDATA[<p>Using custom types in <a href="https://www.playframework.com/documentation/2.4.x/ScalaRouting">Play Framework’s routes file</a> is a major win, and is not something obviously supported. Consider the routes file below:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="nc">GET</span> <span class="o">/</span><span class="n">stuff</span><span class="o">/:</span><span class="n">id</span>     <span class="nd">@controllers</span><span class="o">.</span><span class="nc">StuffController</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span><span class='line'><span class="nc">GET</span> <span class="o">/</span><span class="n">things</span><span class="o">/:</span><span class="n">id</span>    <span class="nd">@controllers</span><span class="o">.</span><span class="nc">ThingsController</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">java.util.UUID</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>In the first route, we take the id parameter as a String. In the second, we take it as a <code>java.util.UUID</code>.</p>
+
+<h2>Advantages</h2>
+
+<p>In our example above, paths that do not contains UUIDs are not matched for the second route. We don’t have to deal with IDs that are not UUIDs.</p>
+
+<p>At the start of a project, you may see lots of lines that say:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">id</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>   <span class="k">case</span> <span class="n">i</span> <span class="k">if</span> <span class="n">isUUID</span><span class="o">(</span><span class="n">i</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">doStuff</span><span class="o">()</span>
+</span><span class='line'>   <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="nc">BadRequest</span><span class="o">(</span><span class="err">“</span><span class="n">id</span> <span class="n">must</span> <span class="n">be</span> <span class="n">a</span> <span class="nc">UUID</span><span class="err">”</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>By not matching on the route, we can remove this code. A request either matches a route, and is passed to the controller, or it doesn’t, and the controller never knows about the request.</p>
+
+<p>By allowing types, and not just strings, you can avoid <a href="http://c2.com/cgi/wiki?StringlyTyped">stringly-typed</a> controllers. Admittedly, UUIDly-typed is only a small step in the right direction, but still a significant improvement.</p>
+
+<h2>Disadvantages</h2>
+
+<p>You need to fully-qualify the types in the routes file, for example by using <code>java.util.UUID</code> everywhere. You cannot use imports in the routes file. Hopefully someone will find a solution to that at some point.</p>
+
+<h2>Implementation</h2>
+
+<p>There are two things that need doing before you can use custom types in the routes file. Firstly, you must implement a <code>PathBindable</code> and its <code>bind</code> and <code>unbind</code> methods. For a UUID, this is quite simple. The <code>bind</code> method returns an <code>Either</code> so that you can return the a message for why the route did not match.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">package</span> <span class="nn">util</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">import</span> <span class="nn">java.util.UUID</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">play.api.mvc.PathBindable</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">object</span> <span class="nc">Binders</span> <span class="o">{</span>
+</span><span class='line'>   <span class="k">implicit</span> <span class="k">def</span> <span class="n">uuidPathBinder</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PathBindable</span><span class="o">[</span><span class="kt">UUID</span><span class="o">]</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>  <span class="k">override</span> <span class="k">def</span> <span class="n">bind</span><span class="o">(</span><span class="n">key</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">value</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Either</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">UUID</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>     <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>        <span class="nc">Right</span><span class="o">(</span><span class="nc">UUID</span><span class="o">.</span><span class="n">fromString</span><span class="o">(</span><span class="n">value</span><span class="o">))</span>
+</span><span class='line'>     <span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">IllegalArgumentException</span> <span class="o">=&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="nc">Left</span><span class="o">(</span><span class="s">&quot;Id must be a UUID&quot;</span><span class="o">)</span>
+</span><span class='line'>     <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="k">override</span> <span class="k">def</span> <span class="n">unbind</span><span class="o">(</span><span class="n">key</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">value</span><span class="k">:</span> <span class="kt">UUID</span><span class="o">)</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">toString</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>   <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Secondly, you must make Play aware of this class, by changing your build file.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">play.PlayImport.PlayKeys._&lt;/p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">routesImport</span> <span class="o">+=</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">utils</span><span class="o">.</span><span class="nc">Binders</span><span class="o">.</span><span class="k">_</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>After those two steps, you can then use types in the routes file.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[ScalaTest and Twitter Futures]]></title>
@@ -754,115 +853,6 @@ Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepend
 </span></code></pre></td></tr></table></div></figure></notextile></div></p>
 
 <p>The crazy <code>#::</code> operator prepends an element to the start of the Stream, and <code>scanLeft</code> works just like <code>foldLeft</code> but returns a Stream. <a href="http://www.scala-lang.org/api/current/index.html#scala.collection.immutable.Stream">The Scaladoc for Stream</a> actually contains a different version of how to calculate a Fibonacci sequence, but I prefer to use <code>scanLeft</code> for its terseness, and the analogy with <code>foldLeft</code>.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Akka Camel and ActiveMQ]]></title>
-    <link href="http://cjwebb.github.io/blog/2013/09/01/akka-camel-and-activemq/"/>
-    <updated>2013-09-01T07:00:00+01:00</updated>
-    <id>http://cjwebb.github.io/blog/2013/09/01/akka-camel-and-activemq</id>
-    <content type="html"><![CDATA[<p>I&rsquo;ve been using <a href="http://doc.akka.io/docs/akka/snapshot/scala/camel.html" title="Akka Camel">Akka Camel</a> and <a href="http://activemq.apache.org/" title="Active MQ">ActiveMQ</a> recently, as part of a delayed worker-queue system. Given the lack of good googleable information about combining the two, I thought it would be useful if I explained briefly how to get Akka Camel and ActiveMQ to work together in the form of a quick example.</p>
-
-<h2>Producers and Consumers</h2>
-
-<p>Akka Camel uses the concept of producers and consumers, and makes it very easy to link them to ActiveMQ. Let&rsquo;s try publishing a message to an ActiveMQ queue, and then using a consumer to read the messages back.</p>
-
-<p>First, let&rsquo;s implement Producer and Consumer actors. For an actor to produce messages, extend <code>akka.camel.Producer</code> and implement <code>endpointUri</code>. Likewise, to implement an actor to consume messages, extend <code>akka.camel.Consumer</code> and implement the same <code>endpointUri</code>. As the consumer will be receiving messages, you will also need to implement the standard actor <code>receive</code> method.</p>
-
-<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.actor.</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span>
-</span><span class='line'><span class="k">import</span> <span class="nn">akka.camel.</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">class</span> <span class="nc">SimpleProducer</span><span class="o">()</span> <span class="k">extends</span> <span class="nc">Actor</span> <span class="k">with</span> <span class="nc">Producer</span> <span class="k">with</span> <span class="nc">OneWay</span> <span class="o">{</span>
-</span><span class='line'>  <span class="k">def</span> <span class="n">endpointUri</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">activemq</span><span class="k">:</span><span class="kt">foo.bar&amp;rdquo</span><span class="o">;</span>
-</span><span class='line'><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">class</span> <span class="nc">SimpleConsumer</span><span class="o">()</span> <span class="k">extends</span> <span class="nc">Actor</span> <span class="k">with</span> <span class="nc">Consumer</span> <span class="o">{</span>
-</span><span class='line'>  <span class="k">def</span> <span class="n">endpointUri</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">activemq</span><span class="k">:</span><span class="kt">foo.bar&amp;rdquo</span><span class="o">;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="n">receive</span> <span class="k">=</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">case</span> <span class="n">msg</span><span class="k">:</span> <span class="kt">CamelMessage</span> <span class="o">=&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">println</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
-
-<p>These actors will communicate using the ActiveMQ queue named &ldquo;foo.bar&rdquo;. The consumer will print any received messages to the console. As this is a publish-subscribe system, we also need to extend our SimpleProducer with the <code>OneWay</code> trait. This tells Camel that our producer won&rsquo;t be participating in any request-reply messaging patterns.</p>
-
-<h2>Setting up Akka Camel</h2>
-
-<p>Now that we have a Producer and a Consumer, we need to wire a CamelExtension into an ActorSystem to tell it how to use ActiveMQ. In this example, ActiveMQ is running on <code>localhost:61616</code>. The component name needs to match the protocol specified in the producer and consumer endpoints.</p>
-
-<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.actor.</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span>
-</span><span class='line'><span class="k">import</span> <span class="nn">akka.camel.</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span>
-</span><span class='line'><span class="k">import</span> <span class="nn">org.apache.activemq.camel.component.ActiveMQComponent</span>
-</span><span class='line'><span class="k">import</span> <span class="nn">org.apache.activemq.ScheduledMessage._&lt;/p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">val</span> <span class="n">actorSystem</span> <span class="k">=</span> <span class="nc">ActorSystem</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="nc">CamelTesting</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)</span>
-</span><span class='line'><span class="k">val</span> <span class="n">system</span> <span class="k">=</span> <span class="nc">CamelExtension</span><span class="o">(</span><span class="n">actorSystem</span><span class="o">)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">val</span> <span class="n">amqUrl</span> <span class="k">=</span> <span class="n">s</span><span class="s">&quot;nio://localhost:61616&quot;</span>
-</span><span class='line'><span class="n">system</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">addComponent</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">activemq</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;,</span> <span class="nc">ActiveMQComponent</span><span class="o">.</span><span class="n">activeMQComponent</span><span class="o">(</span><span class="n">amqUrl</span><span class="o">))&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;//</span> <span class="n">create</span> <span class="n">consumer</span> <span class="n">and</span> <span class="n">producer</span>
-</span><span class='line'><span class="k">val</span> <span class="n">simpleConsumer</span> <span class="k">=</span> <span class="n">actorSystem</span><span class="o">.</span><span class="n">actorOf</span><span class="o">(</span><span class="nc">Props</span><span class="o">[</span><span class="kt">SimpleConsumer</span><span class="o">])</span>
-</span><span class='line'><span class="k">val</span> <span class="n">simpleProducer</span> <span class="k">=</span> <span class="n">actorSystem</span><span class="o">.</span><span class="n">actorOf</span><span class="o">(</span><span class="nc">Props</span><span class="o">[</span><span class="kt">SimpleProducer</span><span class="o">])</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
-
-<p>Now we have linked Akka to ActiveMQ, let&rsquo;s send messages through it! As our producer is an akka-actor, we can send messages to it just like any other.</p>
-
-<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">first</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)</span>
-</span><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">second</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)</span>
-</span><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="nc">Message</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">third</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">val</span> <span class="n">delayedMessage</span> <span class="k">=</span> <span class="nc">CamelMessage</span><span class="o">(</span><span class="nc">Message</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">delayed</span> <span class="n">fourth</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;),</span> <span class="nc">Map</span><span class="o">(</span><span class="nc">AMQ_SCHEDULED_DELAY</span> <span class="o">&amp;</span><span class="n">ndash</span><span class="o">;&gt;</span> <span class="mi">3000</span><span class="o">))</span>
-</span><span class='line'><span class="n">simpleProducer</span> <span class="o">!</span> <span class="n">delayedMessage</span>
-</span></code></pre></td></tr></table></div></figure></notextile></div></p>
-
-<p>The fourth messages makes use of ActiveMQ&rsquo;s scheduled delay feature. To do this, we had to send a <code>CamelMessage</code> with modified headers. All available CamelMessage options are available here. Unfortunately, this does leak knowledge of ActiveMQ outside of our SimpleProducer, but introducing a level of indirection would easily solve it.</p>
-
-<h2>Conclusion</h2>
-
-<p>We have sent messages through ActiveMQ using Akka-Camel, all in about 40 lines of code. A working example can be <a href="https://github.com/cjwebb/blog-code/blob/master/akka-camel-and-actimemq/src/main/scala/AkkaCamelAndActiveMQ.scala" title="Github codez">viewed on Github</a>. As it is possible for our actors to hide their implementation from those around them, ActiveMQ can be worked into a system using Akka without much hassle at all.</p>
 ]]></content>
   </entry>
   

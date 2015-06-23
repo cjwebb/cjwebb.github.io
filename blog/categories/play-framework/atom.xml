@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: play-framework | cjwebb.github.io]]></title>
+  <link href="http://cjwebb.github.io/blog/categories/play-framework/atom.xml" rel="self"/>
+  <link href="http://cjwebb.github.io/"/>
+  <updated>2015-06-23T19:44:18+01:00</updated>
+  <id>http://cjwebb.github.io/</id>
+  <author>
+    <name><![CDATA[Colin Webb]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Using Play-Framework's PathBindable]]></title>
+    <link href="http://cjwebb.github.io/blog/2015/06/23/play-framework-path-binders/"/>
+    <updated>2015-06-23T19:45:00+01:00</updated>
+    <id>http://cjwebb.github.io/blog/2015/06/23/play-framework-path-binders</id>
+    <content type="html"><![CDATA[<p>Using custom types in <a href="https://www.playframework.com/documentation/2.4.x/ScalaRouting">Play Framework’s routes file</a> is a major win, and is not something obviously supported. Consider the routes file below:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="nc">GET</span> <span class="o">/</span><span class="n">stuff</span><span class="o">/:</span><span class="n">id</span>     <span class="nd">@controllers</span><span class="o">.</span><span class="nc">StuffController</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span><span class='line'><span class="nc">GET</span> <span class="o">/</span><span class="n">things</span><span class="o">/:</span><span class="n">id</span>    <span class="nd">@controllers</span><span class="o">.</span><span class="nc">ThingsController</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">java.util.UUID</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>In the first route, we take the id parameter as a String. In the second, we take it as a <code>java.util.UUID</code>.</p>
+
+<h2>Advantages</h2>
+
+<p>In our example above, paths that do not contains UUIDs are not matched for the second route. We don’t have to deal with IDs that are not UUIDs.</p>
+
+<p>At the start of a project, you may see lots of lines that say:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">id</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>   <span class="k">case</span> <span class="n">i</span> <span class="k">if</span> <span class="n">isUUID</span><span class="o">(</span><span class="n">i</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">doStuff</span><span class="o">()</span>
+</span><span class='line'>   <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="nc">BadRequest</span><span class="o">(</span><span class="err">“</span><span class="n">id</span> <span class="n">must</span> <span class="n">be</span> <span class="n">a</span> <span class="nc">UUID</span><span class="err">”</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>By not matching on the route, we can remove this code. A request either matches a route, and is passed to the controller, or it doesn’t, and the controller never knows about the request.</p>
+
+<p>By allowing types, and not just strings, you can avoid <a href="http://c2.com/cgi/wiki?StringlyTyped">stringly-typed</a> controllers. Admittedly, UUIDly-typed is only a small step in the right direction, but still a significant improvement.</p>
+
+<h2>Disadvantages</h2>
+
+<p>You need to fully-qualify the types in the routes file, for example by using <code>java.util.UUID</code> everywhere. You cannot use imports in the routes file. Hopefully someone will find a solution to that at some point.</p>
+
+<h2>Implementation</h2>
+
+<p>There are two things that need doing before you can use custom types in the routes file. Firstly, you must implement a <code>PathBindable</code> and its <code>bind</code> and <code>unbind</code> methods. For a UUID, this is quite simple. The <code>bind</code> method returns an <code>Either</code> so that you can return the a message for why the route did not match.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">package</span> <span class="nn">util</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">import</span> <span class="nn">java.util.UUID</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">play.api.mvc.PathBindable</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">object</span> <span class="nc">Binders</span> <span class="o">{</span>
+</span><span class='line'>   <span class="k">implicit</span> <span class="k">def</span> <span class="n">uuidPathBinder</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PathBindable</span><span class="o">[</span><span class="kt">UUID</span><span class="o">]</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>  <span class="k">override</span> <span class="k">def</span> <span class="n">bind</span><span class="o">(</span><span class="n">key</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">value</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Either</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">UUID</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>     <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>        <span class="nc">Right</span><span class="o">(</span><span class="nc">UUID</span><span class="o">.</span><span class="n">fromString</span><span class="o">(</span><span class="n">value</span><span class="o">))</span>
+</span><span class='line'>     <span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">IllegalArgumentException</span> <span class="o">=&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="nc">Left</span><span class="o">(</span><span class="s">&quot;Id must be a UUID&quot;</span><span class="o">)</span>
+</span><span class='line'>     <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="k">override</span> <span class="k">def</span> <span class="n">unbind</span><span class="o">(</span><span class="n">key</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">value</span><span class="k">:</span> <span class="kt">UUID</span><span class="o">)</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">toString</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>   <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Secondly, you must make Play aware of this class, by changing your build file.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">play.PlayImport.PlayKeys._&lt;/p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">routesImport</span> <span class="o">+=</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">utils</span><span class="o">.</span><span class="nc">Binders</span><span class="o">.</span><span class="k">_</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>After those two steps, you can then use types in the routes file.</p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -9,7 +9,7 @@
   <meta name="author" content="Colin Webb">
 
   
-  <meta name="description" content="Scala has three different frameworks for writing unit tests, JUnit, Specs2 and ScalaTest. I have mainly been using ScalaTest since I started to learn &hellip;">
+  <meta name="description" content="Using a DSL to write a test can prove to be useful, especially when there are lots of prerequisites, or the problem is complex. Having a test that is &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -77,6 +77,298 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/07/20/testing-in-scala-with-dsls/">Testing in Scala With DSLs</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-07-20T12:00:00+01:00" pubdate data-updated="true">Jul 20<span>th</span>, 2013</time>
+        
+         | <a href="/blog/2013/07/20/testing-in-scala-with-dsls/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Using a DSL to write a test can prove to be useful, especially when there are lots of prerequisites, or the problem is complex. Having a test that is incredibly readable reduces complexity overhead and aids reader comprehension. Any tests that require the reader to retain a mental map could benefit from a DSL.</p>
+
+<p>It is worth experimenting to see what advantages a DSL provides to your tests. If your tests are short and readable without, it will be a waste of time trying to use a DSL.</p>
+
+<h2>What is a DSL?</h2>
+
+<p><a href="http://en.wikipedia.org/wiki/Domain-specific_language">The Wikipedia article says:</a></p>
+
+<blockquote><p>A domain-specific language (DSL) is a type of programming language or specification language in software development and domain engineering dedicated to a particular problem domain, a particular problem representation technique, and/or a particular solution technique.</p></blockquote>
+
+<p>The definition of a DSL makes it quite clear that a DSL is tailored to fit a particular problem. The article also explains that a DSL should be far more expressive than is achievable by a general purpose language, and that they should be as concise a definition as possible.</p>
+
+<blockquote><p>What is the most concise, readable way of expressing my problem?</p></blockquote>
+
+<p>It is often best to aim for natural language. Modeling the problem this way hugely increases readability, and has the benefit that anyone can understand it. Many people start using symbols to represent the domain, but this further complicates matters.</p>
+
+<p>For example, which of the following two lines is the most understandable?</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>alice ~> bob
+</span><span class='line'>alice isFriendsWith bob</span></code></pre></td></tr></table></div></figure>
+
+
+<p>For a newcomer to the code, the symbol&rsquo;s meaning will have to be looked up. However, isFriendsWith is a concept familiar to any English speaker over the age of five. Always ask yourself, what is the most concise, readable way of expressing my problem?</p>
+
+<h2>Code Under Test</h2>
+
+<p>To demonstrate testing with a DSL, let&rsquo;s read some tests. They cover the most ubiquitous of use cases in the modern web: a social friends graph.</p>
+
+<p>What is the specification of our FriendsGraph?</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>FriendsGraphSpec:
+</span><span class='line'> - can store and retrieve people
+</span><span class='line'> - can store a friend
+</span><span class='line'> - retrieves friends, first in last out</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The tests, and the code under test, are <a href="http://github.com">available on Github</a>.</p>
+
+<h3>Test Without a DSL</h3>
+
+<p>This is probably what a lot of tests look like before refactoring. There is room for improvement, but the test itself is fairly readable.</p>
+
+<figure class='code'><figcaption><span>FriendsGraphSpec.scala </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.matchers.ShouldMatchers</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.</span><span class="o">{</span><span class="nc">OneInstancePerTest</span><span class="o">,</span> <span class="nc">FreeSpec</span><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">FriendsGraphSpec</span> <span class="k">extends</span> <span class="nc">FreeSpec</span> <span class="k">with</span> <span class="nc">ShouldMatchers</span> <span class="k">with</span> <span class="nc">OneInstancePerTest</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">graph</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">FriendsGraph</span><span class="o">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;can store and retrieve people&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">getPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="n">alice</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;can store a friend&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">bob</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;bob-id&quot;</span><span class="o">,</span> <span class="s">&quot;Bob&quot;</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">bob</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">getFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="n">bob</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;retrieves friends, first in last out&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">bob</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;bob-id&quot;</span><span class="o">,</span> <span class="s">&quot;Bob&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">charlie</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="s">&quot;charlie-id&quot;</span><span class="o">,</span> <span class="s">&quot;Charlie&quot;</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">bob</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">charlie</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">charlie</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">getFriends</span><span class="o">(</span><span class="n">alice</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="n">charlie</span><span class="o">,</span> <span class="n">bob</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Test with DSL</h3>
+
+<p>Notable improvements are shown after refactoring using a DSL. The number of lines of code has gone up slightly, but crucially, the tests are expressed in far fewer lines. The last one is now expressed in four lines instead of nine.</p>
+
+<p>The tests are also now written in terms that everyone can understand. People are now referred to purely by name, and relationships between them are clearly expressed.</p>
+
+<p>The example below uses the <a href="http://www.artima.com/weblogs/viewpost.jsp?thread=179766" title="Pimp my Library by Martin Odersky">Pimp My Library</a> pattern to convert a Person into a PersonDSL. It is equally valid to not use implicits, and simply return a case class of PersonDSL from the createPerson method. The choice of how to construct the DSL is down to personal preference, and coding conventions. An example of writing a DSL without using implicits is <a href="http://github.com">available in the example code here</a>.</p>
+
+<figure class='code'><figcaption><span>FriendsGraphSpecWithDSL.scala </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.matchers.ShouldMatchers</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.</span><span class="o">{</span><span class="nc">OneInstancePerTest</span><span class="o">,</span> <span class="nc">FreeSpec</span><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">class</span> <span class="nc">FriendsGraphSpecWithDSL</span> <span class="k">extends</span> <span class="nc">FreeSpec</span> <span class="k">with</span> <span class="nc">ShouldMatchers</span> <span class="k">with</span> <span class="nc">OneInstancePerTest</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">graph</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">FriendsGraph</span><span class="o">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;can store and retrieve people&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">alice</span> <span class="k">=</span> <span class="nc">_alice</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">getPerson</span><span class="o">(</span><span class="n">alice</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="n">alice</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;can store a friend&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="nc">_alice</span><span class="o">,</span> <span class="nc">_bob</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">alice</span> <span class="n">befriends</span> <span class="n">bob</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">alice</span> <span class="n">isFriendsWith</span> <span class="n">bob</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="s">&quot;retrieves friends, first in last out&quot;</span> <span class="n">in</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="o">(</span><span class="n">alice</span><span class="o">,</span> <span class="n">bob</span><span class="o">,</span> <span class="n">charlie</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="nc">_alice</span><span class="o">,</span> <span class="nc">_bob</span><span class="o">,</span> <span class="nc">_charlie</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">alice</span> <span class="n">befriends</span> <span class="n">bob</span>
+</span><span class='line'>    <span class="n">alice</span> <span class="n">befriends</span> <span class="n">charlie</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">alice</span> <span class="n">isFriendsWith</span> <span class="o">(</span><span class="n">charlie</span><span class="o">,</span> <span class="n">bob</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">_alice</span><span class="o">()</span> <span class="k">=</span> <span class="n">createPerson</span><span class="o">(</span><span class="s">&quot;alice-id&quot;</span><span class="o">,</span> <span class="s">&quot;Alice&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">_bob</span><span class="o">()</span> <span class="k">=</span> <span class="n">createPerson</span><span class="o">(</span><span class="s">&quot;bob-id&quot;</span><span class="o">,</span> <span class="s">&quot;Bob&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">_charlie</span><span class="o">()</span> <span class="k">=</span> <span class="n">createPerson</span><span class="o">(</span><span class="s">&quot;charlie-id&quot;</span><span class="o">,</span> <span class="s">&quot;Charlie&quot;</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">createPerson</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">person</span> <span class="k">=</span> <span class="nc">Person</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">putPerson</span><span class="o">(</span><span class="n">person</span><span class="o">)</span>
+</span><span class='line'>    <span class="n">person</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="n">getPerson</span><span class="o">(</span><span class="n">person</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">graph</span><span class="o">.</span><span class="n">getPerson</span><span class="o">(</span><span class="n">person</span><span class="o">.</span><span class="n">id</span><span class="o">).</span><span class="n">getOrElse</span><span class="o">(</span><span class="n">fail</span><span class="o">(</span><span class="s">&quot;could not find person: &quot;</span> <span class="o">+</span> <span class="n">person</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">def</span> <span class="n">pimpPerson</span><span class="o">(</span><span class="n">person</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span><span class="k">:</span> <span class="kt">PersonDSL</span> <span class="o">=</span> <span class="nc">PersonDSL</span><span class="o">(</span><span class="n">person</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">case</span> <span class="k">class</span> <span class="nc">PersonDSL</span><span class="o">(</span><span class="n">person</span><span class="k">:</span> <span class="kt">Person</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">def</span> <span class="n">befriends</span><span class="o">(</span><span class="n">friend</span><span class="k">:</span> <span class="kt">PersonDSL</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">graph</span><span class="o">.</span><span class="n">makeFriends</span><span class="o">(</span><span class="n">person</span><span class="o">,</span> <span class="n">friend</span><span class="o">.</span><span class="n">person</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="k">def</span> <span class="n">isFriendsWith</span><span class="o">(</span><span class="n">friends</span><span class="k">:</span> <span class="kt">PersonDSL*</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">graph</span><span class="o">.</span><span class="n">getFriends</span><span class="o">(</span><span class="n">person</span><span class="o">.</span><span class="n">id</span><span class="o">)</span> <span class="n">should</span> <span class="n">be</span> <span class="o">(</span><span class="n">friends</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">person</span><span class="o">))</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Conclusion</h2>
+
+<p>DSLs have the ability to make tests easier to understand. However, as with anything, they are not applicable to all circumstances. It is but one technique. The example provided was a good fit as friendships between people are best understood, not as adjacency lists, but as actions and relationships.</p>
+
+<p>Next time you start writing a complicated test, try altering your view on it and consider how it would read as a DSL. It may be compelling.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -327,6 +619,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015/06/23/play-framework-path-binders/">Using Play-Framework&#8217;s PathBindable</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015/03/02/cassandra-ttl-is-per-column/">Cassandra TTL Is Per Column</a>
       </li>
     
@@ -340,10 +636,6 @@
     
       <li class="post">
         <a href="/blog/2014/12/31/code2014/">#Code2014</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/10/02/monoids/">Monoids</a>
       </li>
     
   </ul>
