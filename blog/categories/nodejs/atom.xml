@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: nodejs | cjwebb.github.io]]></title>
+  <link href="http://cjwebb.github.io/blog/categories/nodejs/atom.xml" rel="self"/>
+  <link href="http://cjwebb.github.io/"/>
+  <updated>2015-12-06T15:35:25+00:00</updated>
+  <id>http://cjwebb.github.io/</id>
+  <author>
+    <name><![CDATA[Colin Webb]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Aggregation Services in Node.js]]></title>
+    <link href="http://cjwebb.github.io/blog/2014/07/16/aggregation-services-in-nodejs/"/>
+    <updated>2014-07-16T19:30:00+01:00</updated>
+    <id>http://cjwebb.github.io/blog/2014/07/16/aggregation-services-in-nodejs</id>
+    <content type="html"><![CDATA[<p><a href="http://cjwebb.github.io/blog/2014/03/26/aggregation-service-using-play-json/">My previous blog post</a> talked about building Aggregation Services using Play-JSON. In it, I mentioned that Aggregation Services using JavaScript might be quite nice. As JSON is native to JavaScript, you might expect manipulating JSON in JavaScript to be incredibly simple. And you would be correct!</p>
+
+<p>Below is the same functionality as last time, but with Node.js. To recap, we fetch an article <code>a1</code>, which contains a list of products ids <code>[s1, s2, s3]</code>. We load the article, and then have to fetch all the products it contains.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">express</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">lsquo</span><span class="p">;</span><span class="nx">express</span><span class="o">&amp;</span><span class="nx">rsquo</span><span class="p">;),</span>
+</span><span class='line'>    <span class="nx">request</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">lsquo</span><span class="p">;</span><span class="nx">request</span><span class="o">&amp;</span><span class="nx">rsquo</span><span class="p">;),</span>
+</span><span class='line'>    <span class="nx">async</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">lsquo</span><span class="p">;</span><span class="nx">async</span><span class="o">&amp;</span><span class="nx">rsquo</span><span class="p">;),</span>
+</span><span class='line'>    <span class="nx">app</span> <span class="o">=</span> <span class="nx">express</span><span class="p">();</span><span class="o">&lt;</span><span class="err">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">p</span><span class="o">&gt;</span><span class="c1">// where our json data lives</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>    <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="nx">s3</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;</span><span class="o">:</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="o">&lt;</span><span class="nx">a</span> <span class="nx">href</span><span class="o">=</span><span class="s2">&quot;https://gist.githubusercontent.com/cjwebb/aef1f4fb2ca6d01f8b63/raw/0b6eb2c9b55a6720ccf41ee4ff8cca053cfda063/product-s3.json&quot;</span><span class="o">&gt;</span><span class="nx">https</span><span class="o">:</span><span class="c1">//gist.githubusercontent.com/cjwebb/aef1f4fb2ca6d01f8b63/raw/0b6eb2c9b55a6720ccf41ee4ff8cca053cfda063/product-s3.json&lt;/a&gt;&amp;rdquo;,</span>
+</span><span class='line'>    <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="nx">s2</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;</span><span class="o">:</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="o">&lt;</span><span class="nx">a</span> <span class="nx">href</span><span class="o">=</span><span class="s2">&quot;https://gist.githubusercontent.com/cjwebb/2d7fce88ce6594325bec/raw/fe025c2eafb8aeca953999f10663b83863a14d25/product-s2.json&quot;</span><span class="o">&gt;</span><span class="nx">https</span><span class="o">:</span><span class="c1">//gist.githubusercontent.com/cjwebb/2d7fce88ce6594325bec/raw/fe025c2eafb8aeca953999f10663b83863a14d25/product-s2.json&lt;/a&gt;&amp;rdquo;,</span>
+</span><span class='line'>    <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="nx">s1</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;</span><span class="o">:</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="o">&lt;</span><span class="nx">a</span> <span class="nx">href</span><span class="o">=</span><span class="s2">&quot;https://gist.githubusercontent.com/cjwebb/814c6337b0f04f1cfeba/raw/dc9b297a96c0bd8870436413e51efa2a36168308/product-s1.json&quot;</span><span class="o">&gt;</span><span class="nx">https</span><span class="o">:</span><span class="c1">//gist.githubusercontent.com/cjwebb/814c6337b0f04f1cfeba/raw/dc9b297a96c0bd8870436413e51efa2a36168308/product-s1.json&lt;/a&gt;&amp;rdquo;,</span>
+</span><span class='line'>    <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="nx">a1</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;</span><span class="o">:</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="o">&lt;</span><span class="nx">a</span> <span class="nx">href</span><span class="o">=</span><span class="s2">&quot;https://gist.githubusercontent.com/cjwebb/c26c42e03ea8573efd4c/raw/75479f6f2d218ac6212e4f4b53fc7e30746228bd/article-a1.json&quot;</span><span class="o">&gt;</span><span class="nx">https</span><span class="o">:</span><span class="c1">//gist.githubusercontent.com/cjwebb/c26c42e03ea8573efd4c/raw/75479f6f2d218ac6212e4f4b53fc7e30746228bd/article-a1.json&lt;/a&gt;&amp;rdquo;</span>
+</span><span class='line'><span class="p">}</span><span class="o">&lt;</span><span class="err">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">p</span><span class="o">&gt;</span><span class="kd">var</span> <span class="nx">fetchProduct</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">,</span> <span class="nx">cb</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">request</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="nx">item</span><span class="p">],</span> <span class="p">{</span><span class="nx">json</span><span class="o">:</span><span class="kc">true</span><span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">body</span><span class="p">){</span>
+</span><span class='line'>        <span class="nx">cb</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">body</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">};</span><span class="o">&lt;</span><span class="err">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">p</span><span class="o">&gt;</span><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">lsquo</span><span class="p">;</span><span class="err">/&amp;rsquo;, function(req, res){</span>
+</span><span class='line'>    <span class="nx">request</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="o">&amp;</span><span class="nx">lsquo</span><span class="p">;</span><span class="nx">a1</span><span class="o">&amp;</span><span class="nx">rsquo</span><span class="p">;],</span> <span class="p">{</span><span class="nx">json</span><span class="o">:</span><span class="kc">true</span><span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">body</span><span class="p">){</span>
+</span><span class='line'>        <span class="nx">async</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">body</span><span class="p">[</span><span class="o">&amp;</span><span class="nx">lsquo</span><span class="p">;</span><span class="nx">product_list</span><span class="o">&amp;</span><span class="nx">rsquo</span><span class="p">;],</span> <span class="nx">fetchProduct</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">results</span><span class="p">){</span>
+</span><span class='line'>            <span class="c1">// mutate all the state!! &lt;br/&gt;</span>
+</span><span class='line'>            <span class="nx">body</span><span class="p">[</span><span class="o">&amp;</span><span class="nx">lsquo</span><span class="p">;</span><span class="nx">product_list</span><span class="o">&amp;</span><span class="nx">rsquo</span><span class="p">;]</span> <span class="o">=</span> <span class="nx">results</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">n</span><span class="p">){</span> <span class="k">return</span> <span class="nx">n</span> <span class="p">});</span>   <span class="o">&lt;</span><span class="nx">br</span><span class="o">/&gt;</span>
+</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">body</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">});</span><span class="o">&lt;</span><span class="err">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">p</span><span class="o">&gt;</span><span class="nx">app</span><span class="p">.</span><span class="nx">listen</span><span class="p">(</span><span class="mi">3000</span><span class="p">);</span><span class="o">&lt;</span><span class="err">/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">p</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Having worked a lot with Scala and Clojure recently, I keep forgetting that one can actually mutate variables! If the service is kept relatively small, the mutation should be forgiveable.</p>
+
+<p>This isn&rsquo;t production-ready code. Error handling is missing for the first HTTP request, and if <code>fetchProduct</code> returns an error, erroring products are filtered out. Hopefully though, the code gives a flavour of what an Aggregation service written in Node.js would look like.</p>
+]]></content>
+  </entry>
+  
+</feed>

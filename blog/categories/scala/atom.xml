@@ -1,0 +1,769 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: scala | cjwebb.github.io]]></title>
+  <link href="http://cjwebb.github.io/blog/categories/scala/atom.xml" rel="self"/>
+  <link href="http://cjwebb.github.io/"/>
+  <updated>2015-12-06T15:35:25+00:00</updated>
+  <id>http://cjwebb.github.io/</id>
+  <author>
+    <name><![CDATA[Colin Webb]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Using Play-Framework's PathBindable]]></title>
+    <link href="http://cjwebb.github.io/blog/2015/06/23/play-framework-path-binders/"/>
+    <updated>2015-06-23T19:45:00+01:00</updated>
+    <id>http://cjwebb.github.io/blog/2015/06/23/play-framework-path-binders</id>
+    <content type="html"><![CDATA[<p>Using custom types in <a href="https://www.playframework.com/documentation/2.4.x/ScalaRouting">Play Framework’s routes file</a> is a major win, and is not something obviously supported. Consider the routes file below:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="nc">GET</span> <span class="o">/</span><span class="n">stuff</span><span class="o">/:</span><span class="n">id</span>     <span class="nd">@controllers</span><span class="o">.</span><span class="nc">StuffController</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span><span class='line'><span class="nc">GET</span> <span class="o">/</span><span class="n">things</span><span class="o">/:</span><span class="n">id</span>    <span class="nd">@controllers</span><span class="o">.</span><span class="nc">ThingsController</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">java.util.UUID</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>In the first route, we take the id parameter as a String. In the second, we take it as a <code>java.util.UUID</code>.</p>
+
+<h2>Advantages</h2>
+
+<p>In our example above, paths that do not contains UUIDs are not matched for the second route. We don’t have to deal with IDs that are not UUIDs.</p>
+
+<p>At the start of a project, you may see lots of lines that say:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">id</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>   <span class="k">case</span> <span class="n">i</span> <span class="k">if</span> <span class="n">isUUID</span><span class="o">(</span><span class="n">i</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">doStuff</span><span class="o">()</span>
+</span><span class='line'>   <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="nc">BadRequest</span><span class="o">(</span><span class="err">“</span><span class="n">id</span> <span class="n">must</span> <span class="n">be</span> <span class="n">a</span> <span class="nc">UUID</span><span class="err">”</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>By not matching on the route, we can remove this code. A request either matches a route, and is passed to the controller, or it doesn’t, and the controller never knows about the request.</p>
+
+<p>By allowing types, and not just strings, you can avoid <a href="http://c2.com/cgi/wiki?StringlyTyped">stringly-typed</a> controllers. Admittedly, UUIDly-typed is only a small step in the right direction, but still a significant improvement.</p>
+
+<h2>Disadvantages</h2>
+
+<p>You need to fully-qualify the types in the routes file, for example by using <code>java.util.UUID</code> everywhere. You cannot use imports in the routes file. Hopefully someone will find a solution to that at some point.</p>
+
+<h2>Implementation</h2>
+
+<p>There are two things that need doing before you can use custom types in the routes file. Firstly, you must implement a <code>PathBindable</code> and its <code>bind</code> and <code>unbind</code> methods. For a UUID, this is quite simple. The <code>bind</code> method returns an <code>Either</code> so that you can return the a message for why the route did not match.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">package</span> <span class="nn">util</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">import</span> <span class="nn">java.util.UUID</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">play.api.mvc.PathBindable</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">object</span> <span class="nc">Binders</span> <span class="o">{</span>
+</span><span class='line'>   <span class="k">implicit</span> <span class="k">def</span> <span class="n">uuidPathBinder</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PathBindable</span><span class="o">[</span><span class="kt">UUID</span><span class="o">]</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">bind</span><span class="o">(</span><span class="n">key</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">value</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Either</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">UUID</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>         <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="nc">Right</span><span class="o">(</span><span class="nc">UUID</span><span class="o">.</span><span class="n">fromString</span><span class="o">(</span><span class="n">value</span><span class="o">))</span>
+</span><span class='line'>         <span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">IllegalArgumentException</span> <span class="o">=&gt;</span> <span class="nc">Left</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="nc">Id</span> <span class="n">must</span> <span class="n">be</span> <span class="n">a</span> <span class="nc">UUID</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)</span>
+</span><span class='line'>         <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">unbind</span><span class="o">(</span><span class="n">key</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">value</span><span class="k">:</span> <span class="kt">UUID</span><span class="o">)</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">toString</span>
+</span><span class='line'>   <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Secondly, you must make Play aware of this class, by changing your build file.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">play.PlayImport.PlayKeys._&lt;/p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">routesImport</span> <span class="o">+=</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">utils</span><span class="o">.</span><span class="nc">Binders</span><span class="o">.</span><span class="k">_</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>After those two steps, you can then use types in the routes file.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[ScalaTest and Twitter Futures]]></title>
+    <link href="http://cjwebb.github.io/blog/2015/02/02/scalatest-futures/"/>
+    <updated>2015-02-02T19:45:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2015/02/02/scalatest-futures</id>
+    <content type="html"><![CDATA[<p>Scala has nice abstractions for asynchronous code. However, writing tests for that code sometimes results in an ugly, unreadable mess. Fortunately, ScalaTest has built-in support for testing Futures, in addition to utilities for other types of asynchronous testing, such as polling and test-probes.</p>
+
+<h2>org.scalatest.concurrent.Futures</h2>
+
+<p>ScalaTest has <a href="http://doc.scalatest.org/2.0/#org.scalatest.concurrent.Futures">a trait named Futures</a> which defines functions such as <code>whenReady</code>, and other goodies like a <code>futureValue</code> method to help your async tests become terser. However, ScalaTest only comes with support for the standard-library Futures. To use them, mixin <code>org.scalatest.concurrent.ScalaFutures</code>.</p>
+
+<p>If, currently like me, you&rsquo;re using <a href="https://twitter.github.io/finagle/guide/Futures.html#futures">Twitter Futures</a>, then you need to define your own support for them. Luckily, it is quite easy to define support for any Futures library.</p>
+
+<p>Behold a TwitterFutures trait:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">com.twitter.util.</span><span class="o">{</span><span class="nc">Throw</span><span class="o">,</span> <span class="nc">Return</span><span class="o">}</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.concurrent.Futures</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">trait</span> <span class="nc">TwitterFutures</span> <span class="k">extends</span> <span class="nc">Futures</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">import</span> <span class="nn">scala.language.implicitConversions</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">implicit</span> <span class="k">def</span> <span class="n">convertTwitterFuture</span><span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s">&quot;twitterFuture:%20com.twitter.util.Future[T]&quot;</span><span class="o">&gt;</span><span class="n">T</span><span class="o">&lt;/</span><span class="n">a</span><span class="k">&gt;:</span> <span class="nc">FutureConcept</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>    <span class="k">new</span> <span class="nc">FutureConcept</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">eitherValue</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">T</span><span class="o">]]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">twitterFuture</span><span class="o">.</span><span class="n">poll</span><span class="o">.</span><span class="n">map</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">case</span> <span class="nc">Return</span><span class="o">(</span><span class="n">o</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">o</span><span class="o">)</span>
+</span><span class='line'>          <span class="k">case</span> <span class="nc">Throw</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>  <span class="k">=&gt;</span> <span class="nc">Left</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">isCanceled</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">isExpired</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>You may also have to define an implicit <code>PatienceConfig</code> for your tests as the default settings will timeout after 150 milliseconds.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">implicit</span> <span class="k">val</span> <span class="n">asyncConfig</span> <span class="k">=</span> <span class="nc">PatienceConfig</span><span class="o">(</span><span class="n">timeout</span> <span class="k">=</span> <span class="n">scaled</span><span class="o">(</span><span class="nc">Span</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="nc">Seconds</span><span class="o">)))</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<h2>Polling?</h2>
+
+<p>Strangely, ScalaTest chooses to poll futures, despite both Scala and Twitter Futures coming with <code>Await</code> functions that handle timeouts. Using that as a starting point would have seemed more sensible to me. However, I&rsquo;m not the author of a successful Scala testing library, and I&rsquo;m sure that author <a href="http://twitter.com/bvenners">Bill Venners</a> had a reason. However, it is worth noting.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Monoids]]></title>
+    <link href="http://cjwebb.github.io/blog/2014/10/02/monoids/"/>
+    <updated>2014-10-02T22:00:00+01:00</updated>
+    <id>http://cjwebb.github.io/blog/2014/10/02/monoids</id>
+    <content type="html"><![CDATA[<blockquote><p>In abstract algebra, a branch of mathematics, a monoid is an algebraic structure with a single associative binary operation and an identity element. Monoids are studied in semigroup theory as they are semigroups with identity.</p></blockquote>
+
+<p><a href="http://en.wikipedia.org/wiki/Monoid">Wikipedia has the above definition of a Monoid</a>. This blog post will desconstruct that definition to simply describe what a monoid is, and why you would want to use one.</p>
+
+<p>We will, however, ignore a proper defintion of &lsquo;abstract algebra&rsquo; as that would mean writing several textbooks. Just imagine an &lsquo;algebraic structure&rsquo; as a thing that contains functions. A &lsquo;thing that contains functions&rsquo; is sometimes named a class in programming languages.</p>
+
+<p>So, with that out of the way, this is the list of things we will cover:</p>
+
+<ul>
+<li>Associative</li>
+<li>Semigroup</li>
+<li>Identity</li>
+</ul>
+
+
+<h2>Associative</h2>
+
+<p>You should have learnt some associative things during Mathematics lessons at primary school. Addition and Multiplication are associative. Subtraction and Division are not. Associativity means that you can reorder operations on a list of things, and always receive the same result.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="o">((((</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">)</span> <span class="o">+</span> <span class="mi">3</span><span class="o">)</span> <span class="o">+</span> <span class="mi">4</span><span class="o">)</span> <span class="o">+</span> <span class="mi">5</span><span class="o">)</span> <span class="k">=</span> <span class="mi">15</span>
+</span><span class='line'><span class="o">(</span><span class="mi">1</span> <span class="o">+</span> <span class="o">(</span><span class="mi">2</span> <span class="o">+</span> <span class="o">(</span><span class="mi">3</span> <span class="o">+</span> <span class="o">(</span><span class="mi">4</span> <span class="o">+</span> <span class="mi">5</span><span class="o">))))</span> <span class="k">=</span> <span class="mi">15</span> <span class="c1">// reordered, same result</span>
+</span><span class='line'><span class="o">((((</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span><span class="o">)</span> <span class="o">-</span> <span class="mi">3</span><span class="o">)</span> <span class="o">-</span> <span class="mi">4</span><span class="o">)</span> <span class="o">-</span> <span class="mi">5</span><span class="o">)</span> <span class="k">=</span> <span class="o">-</span><span class="mi">13</span>
+</span><span class='line'><span class="o">(</span><span class="mi">1</span> <span class="o">-</span> <span class="o">(</span><span class="mi">2</span> <span class="o">-</span> <span class="o">(</span><span class="mi">3</span> <span class="o">-</span> <span class="o">(</span><span class="mi">4</span> <span class="o">-</span> <span class="mi">5</span><span class="o">))))</span> <span class="k">=</span> <span class="mi">3</span> <span class="c1">// reordered, different result</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<h2>Semigroup</h2>
+
+<p>Semigroup is the name for a thing that provides an associative function. For Integers, <code>+</code> and <code>*</code> are associative functions. A Semigroup is one of those &ldquo;algebraic structures&rdquo;, and it has one function; an associative one.</p>
+
+<p>It would looks like this, for adding up Integers:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">AdditionSemigroup</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">associative</span><span class="o">(</span><span class="n">a</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span><span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>It is worth noting that a Semigroup will apply to a whole type. This Semigroup will apply to all <code>Int</code>, as denoted by the square brackets after the class name. The example is written in Scala, where <code>Int</code> is an alias for <code>Integer</code>.</p>
+
+<h2>Identity</h2>
+
+<p>Also known as the zero value, or the &lsquo;value for which nothing happens&rsquo;. This will depend on what your monoid does. For instance, for an adding monoid, the identity value will be zero. Adding zero to <code>x</code> gives you <code>x</code>. For multiplication, the identity value will be 1. Multiplying 1 by <code>x</code> gives you <code>x</code>. If we had kept the identity value as zero, multiplying <code>x</code> by zero would return zero, thereby being useless. Likewise, any other value would mess up our calculation.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="mi">1</span> <span class="o">+</span> <span class="mi">1</span>     <span class="k">=</span> <span class="mi">2</span>
+</span><span class='line'><span class="mi">1</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">0</span> <span class="k">=</span> <span class="mi">2</span> <span class="c1">// we can add an &amp;lsquo;identity&amp;rsquo; of zero at any point</span>
+</span><span class='line'><span class="mi">4</span> <span class="o">*</span> <span class="mi">4</span>     <span class="k">=</span> <span class="mi">16</span>
+</span><span class='line'><span class="mi">4</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">1</span> <span class="k">=</span> <span class="mi">16</span> <span class="c1">// we can add an &amp;lsquo;identity&amp;rsquo; of 1 at any point.</span>
+</span><span class='line'><span class="mi">4</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">0</span> <span class="k">=</span> <span class="mi">0</span>  <span class="c1">// an &amp;lsquo;identity&amp;rsquo; of zero doesn&amp;rsquo;t work for multiplication</span>
+</span><span class='line'><span class="mi">4</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">2</span> <span class="k">=</span> <span class="mi">32</span> <span class="c1">// neither does any other value. It has to be 1!</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<h2>So what is a monoid?</h2>
+
+<p>A monoid, has an associative function, and it has an identity function. As you may be able to tell from the wikipedia description, it really is a Semigroup, but with an identity function.</p>
+
+<p>As shown above, the <code>+</code> operator on Integers is associative, and we know that the zero value for this is <code>0</code></p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">class</span> <span class="nc">AdditionMonoid</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">identity</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">associative</span><span class="o">(</span><span class="n">a</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span><span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<h2>Why is this useful?</h2>
+
+<p>Consider the following Scala example. <code>|+|</code> is an alias for our previously-seen associative method. This particular associative method (<a href="https://github.com/scalaz/scalaz/blob/49b235695f1d3ae3217a70b419cbb33337f31ade/core/src/main/scala/scalaz/std/Map.scala#L113">taken from scalaz</a>) merges two Maps together by summing the values if the keys are equal.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">scala</span><span class="o">&gt;</span> <span class="k">import</span> <span class="nn">scalaz.Scalaz._</span> <span class="c1">// this defines the |+| operator.</span>
+</span><span class='line'><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">Map</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">a</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="o">-&gt;</span> <span class="mf">1.0</span><span class="o">,</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">b</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="o">-&gt;</span> <span class="mf">3.0</span><span class="o">)</span> <span class="o">|+|</span> <span class="nc">Map</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">a</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="o">-&gt;</span> <span class="o">-</span><span class="mf">1.0</span><span class="o">)</span>
+</span><span class='line'><span class="n">res0</span><span class="k">:</span> <span class="kt">scala.collection.immutable.Map</span><span class="o">[</span><span class="kt">String</span>,<span class="kt">Double</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span><span class="n">a</span> <span class="o">-&gt;</span> <span class="mf">0.0</span><span class="o">,</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="mf">3.0</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>We can also take advantage of the <code>reduce</code> method to do this:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="n">scala</span><span class="o">&gt;</span> <span class="nc">List</span><span class="o">(</span><span class="nc">Map</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">a</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="o">-&gt;</span> <span class="mf">1.0</span><span class="o">,</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">b</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="o">-&gt;</span> <span class="mf">3.0</span><span class="o">),</span> <span class="nc">Map</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">a</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;</span> <span class="o">-&gt;</span> <span class="o">-</span><span class="mf">1.0</span><span class="o">)).</span><span class="n">reduce</span><span class="o">(&lt;</span><span class="n">em</span><span class="o">&gt;</span> <span class="o">|+|</span> <span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;)</span>
+</span><span class='line'><span class="n">res1</span><span class="k">:</span> <span class="kt">scala.collection.immutable.Map</span><span class="o">[</span><span class="kt">String</span>,<span class="kt">Double</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span><span class="n">a</span> <span class="o">-&gt;</span> <span class="mf">0.0</span><span class="o">,</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="mf">3.0</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>If you can define your problem as a Monoid, it becomes trivial to compute, and trivial to parallelise too. Remember, associative functions can be batched and executed in any order.</p>
+
+<p>Hopefully it is becoming clear why this is useful. If you want to add Integers together, most languages already include basic addition. However, Monoids can potentially be written for any type of data. As long as you define <code>identity</code> and <code>associative</code>, they can do anything you want!</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Aggregation Services using Play JSON]]></title>
+    <link href="http://cjwebb.github.io/blog/2014/03/26/aggregation-service-using-play-json/"/>
+    <updated>2014-03-26T19:30:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2014/03/26/aggregation-service-using-play-json</id>
+    <content type="html"><![CDATA[<p>Aggregation services (sometimes known as Composite or Hydration services) are useful when working in SOA. In SOA, services are responsible for discrete objects and collections, yet still often need to reference other object or collections controlled by another service. This is done via referencing Ids. In order to display something useful to the user it is necessary to lookup data from multiple sources and aggregate them together.</p>
+
+<p>Let&rsquo;s look at an example, containing one of my favourite foods:</p>
+
+<h2>Mmm, Sandwiches</h2>
+
+<p>Colin’s Sandwich Shop has a website, that along with selling and delivering sandwiches, also writes a few articles about topical events in the sandwich industry. These articles also contain relevant sandwiches, which the reader will hopefully then purchase.</p>
+
+<p>They have the following APIs, starting with the Article Service:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>GET /article/a1</span></code></pre></td></tr></table></div></figure></p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='json'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;id&amp;rdquo;:</span> <span class="err">&amp;ldquo;a1&amp;rdquo;,</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;title&amp;rdquo;:</span> <span class="err">&amp;ldquo;Top</span> <span class="err">3</span> <span class="err">Sandwiches&amp;rdquo;,</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;content&amp;rdquo;:</span> <span class="err">&amp;ldquo;They</span> <span class="err">all</span> <span class="err">contain</span> <span class="err">bacon.&amp;rdquo;,</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;product_list&amp;rdquo;:</span> <span class="err">[</span>
+</span><span class='line'>    <span class="err">&amp;ldquo;s1&amp;rdquo;,</span> <span class="err">&amp;ldquo;s2&amp;rdquo;,</span> <span class="err">&amp;ldquo;s3&amp;rdquo;</span>
+</span><span class='line'>  <span class="err">]</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Notice that <code>product_list</code> contains only identifiers, not full products.</p>
+
+<p>The sandwich shop also has a product API, which enables lookup of a product by id:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>GET /product/s1</span></code></pre></td></tr></table></div></figure></p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='json'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;id&amp;rdquo;:</span> <span class="err">&amp;ldquo;s1&amp;rdquo;,</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;name&amp;rdquo;:</span> <span class="err">&amp;ldquo;Chicken</span> <span class="err">&amp;amp;</span> <span class="err">Bacon&amp;rdquo;,</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;image&amp;rdquo;:</span> <span class="err">&amp;ldquo;img/sandwich/s1.jpg&amp;rdquo;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>In order to display the articles, the consumer of the API needs to fetch the article, fetch all the products in <code>product_list</code> and then aggregate the results.</p>
+
+<p>The API of the aggregation service would therefore be:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>GET /article/a1</span></code></pre></td></tr></table></div></figure></p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='json'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;id&amp;rdquo;:</span> <span class="err">&amp;ldquo;a1&amp;rdquo;,</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;title&amp;rdquo;:</span> <span class="err">&amp;ldquo;Top</span> <span class="err">3</span> <span class="err">Sandwiches&amp;rdquo;,</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;content&amp;rdquo;:</span> <span class="err">&amp;ldquo;They</span> <span class="err">all</span> <span class="err">contain</span> <span class="err">bacon.&amp;rdquo;,</span>
+</span><span class='line'>  <span class="err">&amp;ldquo;product_list&amp;rdquo;:</span> <span class="err">[</span>
+</span><span class='line'>    <span class="err">{</span>
+</span><span class='line'>      <span class="err">&amp;ldquo;id&amp;rdquo;:</span> <span class="err">&amp;ldquo;s1&amp;rdquo;,</span>
+</span><span class='line'>      <span class="err">&amp;ldquo;name&amp;rdquo;:</span> <span class="err">&amp;ldquo;Club</span> <span class="err">Sandwich&amp;rdquo;,</span>
+</span><span class='line'>      <span class="err">&amp;ldquo;image&amp;rdquo;:</span> <span class="err">&amp;ldquo;img/sandwich/s1.jpg&amp;rdquo;</span>
+</span><span class='line'>    <span class="p">}</span><span class="err">,</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>      <span class="err">&amp;ldquo;id&amp;rdquo;:</span> <span class="err">&amp;ldquo;s2&amp;rdquo;,</span>
+</span><span class='line'>      <span class="err">&amp;ldquo;name&amp;rdquo;:</span> <span class="err">&amp;ldquo;Chicken</span> <span class="err">&amp;amp;</span> <span class="err">Bacon&amp;rdquo;,</span>
+</span><span class='line'>      <span class="err">&amp;ldquo;image&amp;rdquo;:</span> <span class="err">&amp;ldquo;img/sandwich/s2.jpg&amp;rdquo;</span>
+</span><span class='line'>    <span class="p">}</span><span class="err">,</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>      <span class="err">&amp;ldquo;id&amp;rdquo;:</span> <span class="err">&amp;ldquo;s3&amp;rdquo;,</span>
+</span><span class='line'>      <span class="err">&amp;ldquo;name&amp;rdquo;:</span> <span class="err">&amp;ldquo;BLT&amp;rdquo;,</span>
+</span><span class='line'>      <span class="err">&amp;ldquo;image&amp;rdquo;:</span> <span class="err">&amp;ldquo;img/sandwich/s3.jpg&amp;rdquo;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>  <span class="err">]</span>
+</span><span class='line'><span class="err">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<h2>Is Scala the right tool?</h2>
+
+<p>When faced with constructing an aggregation service in Scala most people start by defining the case classes they will need to model the data. This is the workflow, if you convert to case classes:</p>
+
+<blockquote><p>Read JSON -> Convert to case classes -> Change stuff -> Write JSON</p></blockquote>
+
+<p>We obviously need to read JSON from somewhere. We need to change stuff about it, and we need to write it back out again. What exactly does converting to case classes give us? It does have very apparent drawbacks:</p>
+
+<h3>Advantages of converting to case-classes</h3>
+
+<ul>
+<li>We can easily fetch fields</li>
+<li>Normal Scala static typing</li>
+</ul>
+
+
+<h3>Disadvantages of converting to case-classes</h3>
+
+<ul>
+<li>Need to write and maintain the case classes.</li>
+<li>Need to write and maintain lenses, or zippers, to update nested immutable data.</li>
+<li>If JSON contains more than 22 fields, Scala case classes are useless.</li>
+</ul>
+
+
+<p>Writing <a href="http://stackoverflow.com/questions/3900307/cleaner-way-to-update-nested-structures">Lenses or Zippers</a> is required for updating nested immutable case classes. Using the standard library to do this is not pretty.</p>
+
+<p>However, the biggest cost of this method is the maintenance of the cases classes and the lenses/zippers. If the Article service starts returning more data, we have to update the aggregation service too. Similarly, if the product service returns more data, we have to update the aggregation service again.</p>
+
+<p>Converting the JSON to case classes is very rigid. It would be nice if the data just flowed through the aggregation service, and we could apply transformations to it:</p>
+
+<blockquote><p>Read JSON -> Change stuff -> Write JSON</p></blockquote>
+
+<p>The alternatives to using Scala case-classes are to ignore type-safey, and model everything as a <code>Map[Any]</code>. If we&rsquo;re doing that, we may as well use a dynamic language. Aggregation services in JavaScript, Python or Clojure are probably quite nice too.</p>
+
+<p>Or we stick with Scala, and use <a href="http://www.playframework.com/documentation/2.2.x/ScalaJson">Play JSON</a> and <a href="https://github.com/mandubian/play-json-zipper">Play-JSON-zipper</a>.</p>
+
+<h2>Play JSON Transformations</h2>
+
+<p>Play&rsquo;s JSON library provides something akin to <a href="http://goessner.net/articles/JsonPath/">JSONPath</a> functionality. We can search for, update, or delete anything we want to. Let&rsquo;s continue our example, and look at how an aggregation service for Colin&rsquo;s Sandwich Shop could be built.</p>
+
+<p>How do we find all the product ids from some JSON? Easy! We use the recursive search of Play JSON to find anything named &ldquo;product_list&rdquo;, and can be read as <code>List[String]</code>. The symbol <code>\\</code> will return a list of matches, which we then convert to <code>List[String]</code> and flatten.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'>  <span class="k">def</span> <span class="n">findProductIds</span><span class="o">(</span><span class="n">articleJson</span><span class="k">:</span> <span class="kt">JsValue</span><span class="o">)</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>    <span class="o">(</span><span class="n">articleJson</span> <span class="o">\</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">product_list</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)</span>
+</span><span class='line'>      <span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">asOpt</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">]])</span>
+</span><span class='line'>      <span class="o">.</span><span class="n">flatten</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Pretty simple. How then do we update the JSON, given a map of Products by ProductId? Play JSON is limited in this regard, and I&rsquo;ve found the easiest way is to use <a href="https://github.com/mandubian/play-json-zipper">Play-Json-Zipper</a> instead.</p>
+
+<p>The method <code>updateAll</code> takes a <code>PartialFunction[(JsPath, JsValue), JsValue])</code> so we can limit the scope of the update, and then replace ids with fully-fledged products.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">replaceProductIdsWithProducts</span><span class="o">(</span><span class="n">articleJson</span><span class="k">:</span> <span class="kt">JsValue</span><span class="o">,</span>
+</span><span class='line'>                                  <span class="n">productMap</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">JsValue</span><span class="o">])</span><span class="k">:</span> <span class="kt">JsValue</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">isProductList</span><span class="o">(</span><span class="n">jsPath</span><span class="k">:</span> <span class="kt">JsPath</span><span class="o">)</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span>
+</span><span class='line'>    <span class="nc">JsPathExtension</span><span class="o">.</span><span class="n">hasKey</span><span class="o">(</span><span class="n">jsPath</span><span class="o">)</span> <span class="o">==</span> <span class="nc">Some</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">product_list</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="n">replaceWithProducts</span><span class="o">(</span><span class="n">arr</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">JsValue</span><span class="o">])</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">JsValue</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>    <span class="n">arr</span><span class="o">.</span><span class="n">collect</span> <span class="o">{</span> <span class="k">case</span> <span class="nc">JsString</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">productMap</span><span class="o">.</span><span class="n">get</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="o">}.</span><span class="n">flatten</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">articleJson</span><span class="o">.</span><span class="n">updateAll</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="o">(</span><span class="n">jsPath</span><span class="o">,</span> <span class="nc">JsArray</span><span class="o">(</span><span class="n">arr</span><span class="o">))</span> <span class="k">if</span> <span class="n">isProductList</span><span class="o">(</span><span class="n">jsPath</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span><span class='line'>      <span class="nc">JsArray</span><span class="o">(</span><span class="n">replaceWithProducts</span><span class="o">(</span><span class="n">arr</span><span class="o">))</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>These two simple functions provide the only complexity of the aggregation service. The rest is just manipulating <code>Future</code> to fetch the article, products, and return a result. In the end, we can do the entire workflow in about 50 lines of code.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.actor.ActorSystem</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">scala.concurrent.</span><span class="o">{</span><span class="nc">Await</span><span class="o">,</span> <span class="nc">Future</span><span class="o">}</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">scala.concurrent.duration.</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">play.api.libs.json.</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">play.api.libs.json.extensions._&lt;/p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">object</span> <span class="nc">Main</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">timeout</span> <span class="k">=</span> <span class="mi">1</span> <span class="n">second</span>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">actorSystem</span> <span class="k">=</span> <span class="nc">ActorSystem</span><span class="o">()</span>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">dispatcher</span> <span class="k">=</span> <span class="n">actorSystem</span><span class="o">.</span><span class="n">dispatcher</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">articleApi</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">ArticleApi</span><span class="o">()</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">productApi</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">ProductApi</span><span class="o">()&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="n">findProductIds</span><span class="o">(</span><span class="n">articleJson</span><span class="k">:</span> <span class="kt">JsValue</span><span class="o">)</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>    <span class="o">(</span><span class="n">articleJson</span> <span class="o">\</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">product_list</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)</span>
+</span><span class='line'>      <span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">asOpt</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">String</span><span class="o">]])</span>
+</span><span class='line'>      <span class="o">.</span><span class="n">flatten</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="n">fetchProducts</span><span class="o">(</span><span class="n">productIds</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span><span class="k">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">JsValue</span><span class="o">]]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nc">Future</span><span class="o">.</span><span class="n">traverse</span><span class="o">(</span><span class="n">productIds</span><span class="o">){</span> <span class="n">id</span> <span class="k">=&gt;</span>
+</span><span class='line'>      <span class="n">productApi</span><span class="o">.</span><span class="n">getProduct</span><span class="o">(</span><span class="n">id</span><span class="o">)</span> <span class="n">map</span> <span class="o">(</span><span class="n">pOpt</span> <span class="k">=&gt;</span> <span class="n">pOpt</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">p</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">p</span><span class="o">)))</span>
+</span><span class='line'>    <span class="o">}</span> <span class="n">map</span> <span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">flatten</span><span class="o">.</span><span class="n">toMap</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="n">replaceProductIdsWithProducts</span><span class="o">(</span><span class="n">articleJson</span><span class="k">:</span> <span class="kt">JsValue</span><span class="o">,</span>
+</span><span class='line'>                                    <span class="n">productMap</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">JsValue</span><span class="o">])</span><span class="k">:</span> <span class="kt">JsValue</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">def</span> <span class="n">isProductList</span><span class="o">(</span><span class="n">jsPath</span><span class="k">:</span> <span class="kt">JsPath</span><span class="o">)</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span>
+</span><span class='line'>      <span class="nc">JsPathExtension</span><span class="o">.</span><span class="n">hasKey</span><span class="o">(</span><span class="n">jsPath</span><span class="o">)</span> <span class="o">==</span> <span class="nc">Some</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">product_list</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">def</span> <span class="n">replaceWithProducts</span><span class="o">(</span><span class="n">arr</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">JsValue</span><span class="o">])</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">JsValue</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>  <span class="n">arr</span><span class="o">.</span><span class="n">collect</span> <span class="o">{</span> <span class="k">case</span> <span class="nc">JsString</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="o">=&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">productMap</span><span class="o">.</span><span class="n">get</span><span class="o">(</span><span class="n">s</span><span class="o">)</span> <span class="o">}.</span><span class="n">flatten</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">articleJson</span><span class="o">.</span><span class="n">updateAll</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">case</span> <span class="o">(</span><span class="n">jsPath</span><span class="o">,</span> <span class="nc">JsArray</span><span class="o">(</span><span class="n">arr</span><span class="o">))</span> <span class="k">if</span> <span class="n">isProductList</span><span class="o">(</span><span class="n">jsPath</span><span class="o">)</span> <span class="o">=&amp;</span><span class="n">gt</span><span class="o">;</span>
+</span><span class='line'>    <span class="nc">JsArray</span><span class="o">(</span><span class="n">replaceWithProducts</span><span class="o">(</span><span class="n">arr</span><span class="o">))</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">def</span> <span class="n">transform</span><span class="o">()</span><span class="k">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">JsValue</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">for</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">article</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;-</span> <span class="n">articleApi</span><span class="o">.</span><span class="n">getArticle</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">a1</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)</span>
+</span><span class='line'>      <span class="n">productIds</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;-</span> <span class="nc">Future</span> <span class="o">{</span> <span class="n">findProductIds</span><span class="o">(</span><span class="n">article</span><span class="o">)</span> <span class="o">}</span>
+</span><span class='line'>      <span class="n">products</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;-</span> <span class="n">fetchProducts</span><span class="o">(</span><span class="n">productIds</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">yield</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">replaceProductIdsWithProducts</span><span class="o">(</span><span class="n">article</span><span class="o">,</span> <span class="n">products</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">println</span><span class="o">(</span><span class="nc">Await</span><span class="o">.</span><span class="n">result</span><span class="o">(</span><span class="n">transform</span><span class="o">(),</span> <span class="mi">2</span> <span class="n">seconds</span><span class="o">))</span>
+</span><span class='line'>  <span class="n">actorSystem</span><span class="o">.</span><span class="n">shutdown</span><span class="o">()</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>As per usual, <a href="https://github.com/cjwebb/blog-code/tree/master/aggregation-services">working code is available on Github</a>.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Fibonacci Numbers in Scala]]></title>
+    <link href="http://cjwebb.github.io/blog/2013/10/30/fibonacci-numbers-in-scala/"/>
+    <updated>2013-10-30T20:45:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2013/10/30/fibonacci-numbers-in-scala</id>
+    <content type="html"><![CDATA[<p>Working out the <a href="http://en.wikipedia.org/wiki/Fibonacci_number">Fibonacci numbers</a> are a standard exercise when learning a programming language, or just refreshing your knowledge. Below, is a recap of various ways to calculate them in Scala. <a href="https://gist.github.com/cjwebb/7239843">All the code is available in a handy gist</a>.</p>
+
+<p>First, a quick recap of the beginning of the series. If this is unfamiliar to you, please click the first link in this post!</p>
+
+<blockquote><p>0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55</p></blockquote>
+
+<h3>Nth Fibonacci Number</h3>
+
+<blockquote><p>Given a number n, return the corresponding Fibonacci number from the sequence.</p></blockquote>
+
+<p>Lets start off really basically, and use a while loop.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_iter</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">2</span><span class="o">)</span> <span class="n">n</span>
+</span><span class='line'>  <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">ans</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">n1</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">n2</span> <span class="k">=</span> <span class="mi">1</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">var</span> <span class="n">i</span> <span class="k">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'><span class="k">while</span> <span class="o">(</span><span class="n">i</span> <span class="o">&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">i</span> <span class="k">=</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'>  <span class="n">ans</span> <span class="k">=</span> <span class="n">n1</span> <span class="o">+</span> <span class="n">n2</span>
+</span><span class='line'>  <span class="n">n1</span> <span class="k">=</span> <span class="n">n2</span>
+</span><span class='line'>  <span class="n">n2</span> <span class="k">=</span> <span class="n">ans</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">ans</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>The first thing to notice about the Fibonacci sequence is that the first two numbers match their indexes. The 0th number is 0, and the 1st number is 1. These form the foundation of later calculations, and is the reason for the if-statement on line 2 of the code snippet.</p>
+
+<p>We can do better though. Fibonacci sequences rely on previous calculations, so are an ideal opportunity to use recursion:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">n</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">i</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">2</span> <span class="k">=&gt;</span> <span class="n">i</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">i</span> <span class="k">=&gt;</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">+</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>This looks good! Basically only two lines of code, and its fairly easy to follow. However, the keen-eyed amongst you may note that for large values of n, a <code>StackOverflowException</code> may be thrown! To prevent these exceptions when writing recursive code, it is encouraged that we write in a tail-recursive form. <a href="http://blog.richdougherty.com/2009/04/tail-calls-tailrec-and-trampolines.html">The compiler will attempt to optimise the recursion</a>.</p>
+
+<p>Also note that for large n&rsquo;s, we need to use <code>BigInt</code> to avoid integer overflow.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_tailrec</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@tailrec</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">a</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span><span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">n</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">case</span> <span class="mi">0</span> <span class="k">=&gt;</span> <span class="n">b</span>
+</span><span class='line'>      <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="o">,</span> <span class="n">a</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Excellent!</p>
+
+<h3>Fibonacci Series, of length n</h3>
+
+<blockquote><p>Given a number n, return the fibonacci series of length n.</p></blockquote>
+
+<p>This time, instead of returning one number, we want a whole series. Well, we already have a function that returns the nth Fibonacci number, lets just use that!</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">bad_fib</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">0</span> <span class="n">to</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="n">map</span> <span class="o">(</span><span class="n">n</span> <span class="k">=&gt;</span> <span class="n">fib_tailrec</span><span class="o">(</span><span class="n">n</span><span class="o">))</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Whilst we should really benchmark this, to see exactly how terrible it is, we will assume that is too inefficient; it forgets all previous calculations when trying to work out the next number.</p>
+
+<p>How else can we do this then? We can use an accumulator:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_acc</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@tailrec</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">acc</span><span class="o">(</span><span class="n">list</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">],</span> <span class="n">i</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">n</span> <span class="o">||</span> <span class="n">n</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">2</span><span class="o">)</span> <span class="n">list</span>
+</span><span class='line'>    <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">newList</span> <span class="k">=</span> <span class="n">list</span> <span class="o">:::</span> <span class="nc">List</span><span class="o">(</span><span class="n">list</span><span class="o">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="o">)+</span><span class="n">list</span><span class="o">(</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="o">))</span>
+</span><span class='line'>      <span class="n">acc</span><span class="o">(</span><span class="n">newList</span><span class="o">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">acc</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">1</span><span class="o">),</span> <span class="mi">2</span><span class="o">).</span><span class="n">take</span><span class="o">(</span><span class="n">n</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>This has a nasty list creation to append the number onto the end of the list. We have to pass around <code>i</code> everywhere.
+Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepending is easy. This is what the cons operator is for! By constructing the list in reverse we can optimise for a linked list, and remove the <code>i</code> value:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_acc2</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">s</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="k">=</span> <span class="mi">2</span><span class="o">)</span> <span class="n">s</span><span class="o">.</span><span class="n">reverse</span>
+</span><span class='line'>  <span class="k">else</span> <span class="n">fib_acc2</span><span class="o">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="n">s</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">+</span> <span class="n">s</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">::</span> <span class="n">s</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Marvellous. It does get better though. For those of you familiar with <code>Stream</code>, you can do this:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_stream</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">lazy</span> <span class="k">val</span> <span class="n">fibs</span><span class="k">:</span> <span class="kt">Stream</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="mi">0</span> <span class="o">#::</span> <span class="n">fibs</span><span class="o">.</span><span class="n">scanLeft</span><span class="o">(</span><span class="mi">1</span><span class="o">)(&lt;</span><span class="n">em</span><span class="o">&gt;</span> <span class="o">+</span> <span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;)</span>
+</span><span class='line'>  <span class="n">fibs</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="n">n</span><span class="o">).</span><span class="n">toList</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>The crazy <code>#::</code> operator prepends an element to the start of the Stream, and <code>scanLeft</code> works just like <code>foldLeft</code> but returns a Stream. <a href="http://www.scala-lang.org/api/current/index.html#scala.collection.immutable.Stream">The Scaladoc for Stream</a> actually contains a different version of how to calculate a Fibonacci sequence, but I prefer to use <code>scanLeft</code> for its terseness, and the analogy with <code>foldLeft</code>.</p>
+]]></content>
+  </entry>
+  
+</feed>

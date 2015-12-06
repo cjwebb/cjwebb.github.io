@@ -1,0 +1,333 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>ScalaTest and Twitter Futures - cjwebb.github.io</title>
+  <meta name="author" content="Colin Webb">
+
+  
+  <meta name="description" content="Scala has nice abstractions for asynchronous code. However, writing tests for that code sometimes results in an ugly, unreadable mess. Fortunately, &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://cjwebb.github.io/blog/2015/02/02/scalatest-futures">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="cjwebb.github.io" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-41253515-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">cjwebb.github.io</a></h1>
+  
+    <h2>A software engineer in London</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:cjwebb.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">ScalaTest and Twitter Futures</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-02-02T19:45:00+00:00" pubdate data-updated="true"></time>
+        
+         | <a href="#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Scala has nice abstractions for asynchronous code. However, writing tests for that code sometimes results in an ugly, unreadable mess. Fortunately, ScalaTest has built-in support for testing Futures, in addition to utilities for other types of asynchronous testing, such as polling and test-probes.</p>
+
+<h2>org.scalatest.concurrent.Futures</h2>
+
+<p>ScalaTest has <a href="http://doc.scalatest.org/2.0/#org.scalatest.concurrent.Futures">a trait named Futures</a> which defines functions such as <code>whenReady</code>, and other goodies like a <code>futureValue</code> method to help your async tests become terser. However, ScalaTest only comes with support for the standard-library Futures. To use them, mixin <code>org.scalatest.concurrent.ScalaFutures</code>.</p>
+
+<p>If, currently like me, you&rsquo;re using <a href="https://twitter.github.io/finagle/guide/Futures.html#futures">Twitter Futures</a>, then you need to define your own support for them. Luckily, it is quite easy to define support for any Futures library.</p>
+
+<p>Behold a TwitterFutures trait:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">com.twitter.util.</span><span class="o">{</span><span class="nc">Throw</span><span class="o">,</span> <span class="nc">Return</span><span class="o">}</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">org.scalatest.concurrent.Futures</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">trait</span> <span class="nc">TwitterFutures</span> <span class="k">extends</span> <span class="nc">Futures</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">import</span> <span class="nn">scala.language.implicitConversions</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">def</span> <span class="n">convertTwitterFuture</span><span class="o">[</span><span class="kt">T</span><span class="o">](</span><span class="n">twitterFuture</span><span class="k">:</span> <span class="kt">com.twitter.util.Future</span><span class="o">[</span><span class="kt">T</span><span class="o">])</span><span class="k">:</span> <span class="kt">FutureConcept</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="k">=</span>
+</span><span class='line'>    <span class="k">new</span> <span class="nc">FutureConcept</span><span class="o">[</span><span class="kt">T</span><span class="o">]</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">eitherValue</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">T</span><span class="o">]]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">twitterFuture</span><span class="o">.</span><span class="n">poll</span><span class="o">.</span><span class="n">map</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">case</span> <span class="nc">Return</span><span class="o">(</span><span class="n">o</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">o</span><span class="o">)</span>
+</span><span class='line'>          <span class="k">case</span> <span class="nc">Throw</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>  <span class="k">=&gt;</span> <span class="nc">Left</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">isCanceled</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+</span><span class='line'>      <span class="k">override</span> <span class="k">def</span> <span class="n">isExpired</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You may also have to define an implicit <code>PatienceConfig</code> for your tests as the default settings will timeout after 150 milliseconds.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">implicit</span> <span class="k">val</span> <span class="n">asyncConfig</span> <span class="k">=</span> <span class="nc">PatienceConfig</span><span class="o">(</span><span class="n">timeout</span> <span class="k">=</span> <span class="n">scaled</span><span class="o">(</span><span class="nc">Span</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="nc">Seconds</span><span class="o">)))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Polling?</h2>
+
+<p>Strangely, ScalaTest chooses to poll futures, despite both Scala and Twitter Futures coming with <code>Await</code> functions that handle timeouts. Using that as a starting point would have seemed more sensible to me. However, I&rsquo;m not the author of a successful Scala testing library, and I&rsquo;m sure that author <a href="http://twitter.com/bvenners">Bill Venners</a> had a reason. However, it is worth noting.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Colin Webb</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-02-02T19:45:00+00:00" pubdate data-updated="true"></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/scala/'>scala</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://cjwebb.github.io/blog/2015/02/02/scalatest-futures/" data-via="colinjameswebb" data-counturl="http://cjwebb.github.io/blog/2015/02/02/scalatest-futures/" >Tweet</a>
+  
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015/01/20/canned-responses/" title="Previous Post: Mock Responses and Iterate">&laquo; Mock Responses and Iterate</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2015/03/02/cassandra-ttl-is-per-column/" title="Next Post: Cassandra TTL Is Per Column">Cassandra TTL Is Per Column &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015/06/23/play-framework-path-binders/">Using Play-Framework's PathBindable</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/03/02/cassandra-ttl-is-per-column/">Cassandra TTL Is Per Column</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/02/02/scalatest-futures/">ScalaTest and Twitter Futures</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/01/20/canned-responses/">Mock Responses and Iterate</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/12/31/code2014/">#Code2014</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <h1>About Me</h1>
+  <p>My name is Colin Webb, and I'm a software engineer, working in London.</p>
+
+  <p>Currently employed to code in Scala, having previously worked with Java, JavaScript and Python</p>
+  <p>You can find me on Twitter <a href="http://twitter.com/colinjwebb">@colinjwebb</a>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - Colin Webb -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'cjwebbgithubio';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://cjwebb.github.io/blog/2015/02/02/scalatest-futures/';
+        var disqus_url = 'http://cjwebb.github.io/blog/2015/02/02/scalatest-futures/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
