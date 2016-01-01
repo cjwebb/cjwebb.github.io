@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://cjwebb.github.io/blog/2016/01/01/elm-in-octopress/</loc>
+    <lastmod>2016-01-01T07:00:00+00:00</lastmod>
+  </url>
+  <url>
     <loc>http://cjwebb.github.io/blog/2015/06/23/play-framework-path-binders/</loc>
     <lastmod>2015-06-23T19:45:00+01:00</lastmod>
   </url>
@@ -77,5 +81,8 @@
   </url>
   <url>
     <loc>http://cjwebb.github.io/blog/categories/play-framework/</loc>
+  </url>
+  <url>
+    <loc>http://cjwebb.github.io/blog/categories/elm/</loc>
   </url>
 </urlset>

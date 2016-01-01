@@ -4,7 +4,7 @@
   <title><![CDATA[cjwebb.github.io]]></title>
   <link href="http://cjwebb.github.io/atom.xml" rel="self"/>
   <link href="http://cjwebb.github.io/"/>
-  <updated>2015-12-06T15:35:25+00:00</updated>
+  <updated>2016-01-01T07:57:31+00:00</updated>
   <id>http://cjwebb.github.io/</id>
   <author>
     <name><![CDATA[Colin Webb]]></name>
@@ -12,6 +12,86 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Using Elm in Octopress]]></title>
+    <link href="http://cjwebb.github.io/blog/2016/01/01/elm-in-octopress/"/>
+    <updated>2016-01-01T07:00:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2016/01/01/elm-in-octopress</id>
+    <content type="html"><![CDATA[<p><a href="http://elm-lang.org/">Elm</a> is a functional programming language aimed at the browser. It aims to replace all HTML, CSS, and JavaScript code. It borrows a lot from Haskell, and promises that if your Elm code compiles, it will run without exceptions.</p>
+
+<p>Animated, or interactive, examples can greatly enhance blog posts. This is ultimately achieved via embedding HTML, CSS, and JavaScript. My blog is powered by <a href="http://octopress.org/">Octopress</a>, and instead of writing HTML, CSS, and JavaScript, I was interested in using Elm instead.</p>
+
+<h2>Including JavaScript in an Octopress Post</h2>
+
+<p>Running arbitary JavaScript in Octopress is easy. The code below will insert an HTML paragraph into a <code>div</code>.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;elm-goes-here&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">element</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">&quot;elm-goes-here&quot;</span><span class="p">);</span>
+</span><span class='line'>  <span class="nx">element</span><span class="p">.</span><span class="nx">innerHTML</span> <span class="o">=</span> <span class="s2">&quot;&lt;p&gt;This is set via JavaScript!!&lt;/p&gt;&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="nt">&lt;/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Instead of inlining the JavaScript, you can include it in the <code>source/javascripts/</code> directory. After publishing, that directory is made available as <code>/javascripts/</code></p>
+
+<h2>Including Elm in an Octopress Post</h2>
+
+<p>As we can use arbitary JavaScript in an Octopress blog post, we can follow a few simple steps, and have the browser running our Elm code instead!</p>
+
+<p><a href="http://elm-lang.org/guide/interop">Elm has interop with JavaScript</a> through HTML embedding (and a couple of other ways). In order to embed in a <code>div</code>, we first need to write and then compile our Elm code.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>elm-make Stamps.elm –output=app.js</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Once compiled, and made available by placing it in the <code>source/javascripts/</code> directory, we can then include it in the blog post.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;elm-goes-here&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;/javascripts/app.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script&gt;</span>
+</span><span class='line'>  <span class="kd">var</span> <span class="nx">element</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">&quot;elm-goes-here&quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="nx">Elm</span><span class="p">.</span><span class="nx">embed</span><span class="p">(</span><span class="nx">Elm</span><span class="p">.</span><span class="nx">Stamps</span><span class="p">,</span> <span class="nx">elmDiv</span><span class="p">);</span>
+</span><span class='line'><span class="nt">&lt;/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>As a demonstration, have a quick play with the interactive section below. It is an embedded version of <a href="http://elm-lang.org/examples/stamps">Elm&rsquo;s Stamps Example</a>.
+<code>Elm.embed</code> requires a module to import, so if you&rsquo;d like to try this yourself, add the following to the top of your Elm code.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>module Stamps where</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<div id="elm-goes-here" style="height:200px; border:1px solid; margin-bottom: 30px;"></div>
+
+
+<script type="text/javascript" src="http://cjwebb.github.io/javascripts/posts/elm-in-octopress/app.js"></script>
+
+
+<script>
+  var element = document.getElementById("elm-goes-here")
+  Elm.embed(Elm.Stamps, element);
+</script>
+
+
+<p>If you don&rsquo;t like pentagons, <a href="http://elm-lang.org/examples/">there are lots of other Elm examples</a> to play around with.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Using Play-Framework's PathBindable]]></title>
