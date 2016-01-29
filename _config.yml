@@ -3,11 +3,11 @@
 # ----------------------- #
 
 url: http://cjwebb.github.io
-title: cjwebb.github.io 
-subtitle: A software engineer in London 
+title: cjwebb.github.io
+subtitle: I write software, teach people, and investigate new technology
 author: Colin Webb
 simple_search: http://google.com/search
-description: A software engineer in London
+description: I write software, teach people, and investigate new technology
 
 # Default date format is "ordinal" (resulting in "July 22nd 2007")
 # You can customize the format as defined in
