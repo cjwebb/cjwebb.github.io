@@ -9,7 +9,7 @@
   <meta name="author" content="Colin Webb">
 
   
-  <meta name="description" content="I&rsquo;ve been using Akka Camel and ActiveMQ recently, as part of a delayed worker-queue system. Given the lack of good googleable information about &hellip;">
+  <meta name="description" content="Working out the Fibonacci numbers are a standard exercise when learning a programming language, or just refreshing your knowledge. Below, is a recap &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -50,7 +50,7 @@
   <header role="banner"><hgroup>
   <h1><a href="/">cjwebb.github.io</a></h1>
   
-    <h2>A software engineer in London</h2>
+    <h2>I write software, teach people, and investigate new technology</h2>
   
 </hgroup>
 
@@ -77,6 +77,210 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/10/30/fibonacci-numbers-in-scala/">Fibonacci Numbers in Scala</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-10-30T20:45:00+00:00" pubdate data-updated="true"></time>
+        
+         | <a href="/blog/2013/10/30/fibonacci-numbers-in-scala/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Working out the <a href="http://en.wikipedia.org/wiki/Fibonacci_number">Fibonacci numbers</a> are a standard exercise when learning a programming language, or just refreshing your knowledge. Below, is a recap of various ways to calculate them in Scala. <a href="https://gist.github.com/cjwebb/7239843">All the code is available in a handy gist</a>.</p>
+
+<p>First, a quick recap of the beginning of the series. If this is unfamiliar to you, please click the first link in this post!</p>
+
+<blockquote><p>0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55</p></blockquote>
+
+<h3>Nth Fibonacci Number</h3>
+
+<blockquote><p>Given a number n, return the corresponding Fibonacci number from the sequence.</p></blockquote>
+
+<p>Lets start off really basically, and use a while loop.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_iter</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="o">)</span> <span class="n">n</span>
+</span><span class='line'>  <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">ans</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">n1</span> <span class="k">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">n2</span> <span class="k">=</span> <span class="mi">1</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">var</span> <span class="n">i</span> <span class="k">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'>    <span class="k">while</span> <span class="o">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">i</span> <span class="k">=</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'>      <span class="n">ans</span> <span class="k">=</span> <span class="n">n1</span> <span class="o">+</span> <span class="n">n2</span>
+</span><span class='line'>      <span class="n">n1</span> <span class="k">=</span> <span class="n">n2</span>
+</span><span class='line'>      <span class="n">n2</span> <span class="k">=</span> <span class="n">ans</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="n">ans</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The first thing to notice about the Fibonacci sequence is that the first two numbers match their indexes. The 0th number is 0, and the 1st number is 1. These form the foundation of later calculations, and is the reason for the if-statement on line 2 of the code snippet.</p>
+
+<p>We can do better though. Fibonacci sequences rely on previous calculations, so are an ideal opportunity to use recursion:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">n</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">i</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="k">=&gt;</span> <span class="n">i</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">i</span> <span class="k">=&gt;</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">+</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="o">)</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This looks good! Basically only two lines of code, and its fairly easy to follow. However, the keen-eyed amongst you may note that for large values of n, a <code>StackOverflowException</code> may be thrown! To prevent these exceptions when writing recursive code, it is encouraged that we write in a tail-recursive form. <a href="http://blog.richdougherty.com/2009/04/tail-calls-tailrec-and-trampolines.html">The compiler will attempt to optimise the recursion</a>.</p>
+
+<p>Also note that for large n&rsquo;s, we need to use <code>BigInt</code> to avoid integer overflow.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_tailrec</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@tailrec</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">a</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span><span class="o">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">n</span> <span class="k">match</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">case</span> <span class="mi">0</span> <span class="k">=&gt;</span> <span class="n">b</span>
+</span><span class='line'>      <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="o">,</span> <span class="n">a</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Excellent!</p>
+
+<h3>Fibonacci Series, of length n</h3>
+
+<blockquote><p>Given a number n, return the fibonacci series of length n.</p></blockquote>
+
+<p>This time, instead of returning one number, we want a whole series. Well, we already have a function that returns the nth Fibonacci number, lets just use that!</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">bad_fib</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">0</span> <span class="n">to</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="n">map</span> <span class="o">(</span><span class="n">n</span> <span class="k">=&gt;</span> <span class="n">fib_tailrec</span><span class="o">(</span><span class="n">n</span><span class="o">))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Whilst we should really benchmark this, to see exactly how terrible it is, we will assume that is too inefficient; it forgets all previous calculations when trying to work out the next number.</p>
+
+<p>How else can we do this then? We can use an accumulator:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_acc</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@tailrec</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">acc</span><span class="o">(</span><span class="n">list</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">],</span> <span class="n">i</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">n</span> <span class="o">||</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="o">)</span> <span class="n">list</span>
+</span><span class='line'>    <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">val</span> <span class="n">newList</span> <span class="k">=</span> <span class="n">list</span> <span class="o">:::</span> <span class="nc">List</span><span class="o">(</span><span class="n">list</span><span class="o">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="o">)+</span><span class="n">list</span><span class="o">(</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="o">))</span>
+</span><span class='line'>      <span class="n">acc</span><span class="o">(</span><span class="n">newList</span><span class="o">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">)</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">acc</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">1</span><span class="o">),</span> <span class="mi">2</span><span class="o">).</span><span class="n">take</span><span class="o">(</span><span class="n">n</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This has a nasty list creation to append the number onto the end of the list. We have to pass around <code>i</code> everywhere.
+Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepending is easy. This is what the cons operator is for! By constructing the list in reverse we can optimise for a linked list, and remove the <code>i</code> value:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_acc2</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">s</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="o">)</span> <span class="n">s</span><span class="o">.</span><span class="n">reverse</span>
+</span><span class='line'>  <span class="k">else</span> <span class="n">fib_acc2</span><span class="o">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="n">s</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">+</span> <span class="n">s</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">::</span> <span class="n">s</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Marvellous. It does get better though. For those of you familiar with <code>Stream</code>, you can do this:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_stream</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">lazy</span> <span class="k">val</span> <span class="n">fibs</span><span class="k">:</span> <span class="kt">Stream</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="mi">0</span> <span class="o">#::</span> <span class="n">fibs</span><span class="o">.</span><span class="n">scanLeft</span><span class="o">(</span><span class="mi">1</span><span class="o">)(</span><span class="k">_</span> <span class="o">+</span> <span class="k">_</span><span class="o">)</span>
+</span><span class='line'>  <span class="n">fibs</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="n">n</span><span class="o">).</span><span class="n">toList</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The crazy <code>#::</code> operator prepends an element to the start of the Stream, and <code>scanLeft</code> works just like <code>foldLeft</code> but returns a Stream. <a href="http://www.scala-lang.org/api/current/index.html#scala.collection.immutable.Stream">The Scaladoc for Stream</a> actually contains a different version of how to calculate a Fibonacci sequence, but I prefer to use <code>scanLeft</code> for its terseness, and the analogy with <code>foldLeft</code>.</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -754,6 +958,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/06/15/the-virtues-of-side-projects/">The Virtues of Side Projects</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/01/01/elm-in-octopress/">Using Elm in Octopress</a>
       </li>
     
@@ -769,18 +977,14 @@
         <a href="/blog/2015/02/02/scalatest-futures/">ScalaTest and Twitter Futures</a>
       </li>
     
-      <li class="post">
-        <a href="/blog/2015/01/20/canned-responses/">Mock Responses and Iterate</a>
-      </li>
-    
   </ul>
 </section>
 <section>
   <h1>About Me</h1>
-  <p>My name is Colin Webb, and I'm a software engineer, working in London.</p>
+  <p>My name is Colin Webb, and I'm a software consultant.</p>
+  <p>I write software, teach people, and investigate new technology.</p>
 
-  <p>Currently employed to code in Scala, having previously worked with Java, JavaScript and Python</p>
-  <p>You can find me on Twitter <a href="http://twitter.com/colinjwebb">@colinjwebb</a>
+  <p>You can find me on Twitter <a href="http://twitter.com/colinjwebb">@colinjwebb</a>, or generally online at <a href="http://colinjameswebb.com">colinjameswebb.com</a></p>
 </section>
 
 

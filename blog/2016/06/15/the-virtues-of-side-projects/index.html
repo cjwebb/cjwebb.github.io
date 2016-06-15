@@ -5,11 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Mock Responses and Iterate - cjwebb.github.io</title>
+  <title>The Virtues of Side Projects - cjwebb.github.io</title>
   <meta name="author" content="Colin Webb">
 
   
-  <meta name="description" content="&lsquo;Agile&rsquo; may now be an overloaded term abused by all kinds of people, but the original manifesto is actually still quite relevant. The &hellip;">
+  <meta name="description" content="I write software for a living, and most of my side projects are software based too. I view side projects as a tool for learning. Learning by doing. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://cjwebb.github.io/blog/2015/01/20/canned-responses">
+  <link rel="canonical" href="http://cjwebb.github.io/blog/2016/06/15/the-virtues-of-side-projects">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="cjwebb.github.io" type="application/atom+xml">
@@ -80,7 +80,7 @@
   
   <header>
     
-      <h1 class="entry-title">Mock Responses and Iterate</h1>
+      <h1 class="entry-title">The Virtues of Side Projects</h1>
     
     
       <p class="meta">
@@ -96,7 +96,7 @@
   
 
 
-<time datetime="2015-01-20T19:00:00+00:00" pubdate data-updated="true"></time>
+<time datetime="2016-06-15T11:00:00+01:00" pubdate data-updated="true"></time>
         
          | <a href="#disqus_thread">Comments</a>
         
@@ -105,34 +105,45 @@
   </header>
 
 
-<div class="entry-content"><p>&lsquo;Agile&rsquo; may now be an overloaded term abused by all kinds of people, but <a href="http://agilemanifesto.org/">the original manifesto</a> is actually still quite relevant. The second point is:</p>
+<div class="entry-content"><p>I write software for a living, and most of my side projects are software based too. I view side projects as a tool for learning. Learning by doing.</p>
 
-<blockquote><p>Working software over comprehensive documentation</p></blockquote>
+<h2>Side projects can feed positively into your day job, as you learn new skills and techniques</h2>
 
-<p>This is useful to embrace in many circumstances, and can be expanded to:</p>
+<p>Building things from scratch, and by yourself, means you have to broaden your knowledge base. If you&rsquo;re writing a website, you&rsquo;ll need to know how to deploy it, how to enable database backups, how to configure a firewall, and basic server maintenance tools.</p>
 
-<blockquote><p>You should intially favour building software over documenting it. Comprehensive documentation can come later.</p></blockquote>
+<p>When I first started a side project, I wrote Java all day, and developed on Windows. I knew hardly anything about Linux, and certainly had no experience running a server. Whilst it wasn&rsquo;t necessarily all fun, I learnt a lot that has been widely applicable later on in my career.</p>
 
-<p>I have used the following formula for the last few internal APIs I have worked on, and it makes for fun, fast, and collaborative development:</p>
+<p>Side projects can also assist in your day job directly. An example of this very happened recently to me. A couple of colleagues were pair programming on an adjacent desk. They were stuck on something, and casually asked if I knew how to fix a problem they were having. After a minute or so looking at the code, my answer was “Yeah, I did something like this recently in my side project”. I then sent them a link to my side project on Github, and after adapting my code, they had solved their issue and were away coding again.</p>
 
-<ol>
-<li>Write API layer that returns mock responses</li>
-<li>Deploy it</li>
-<li>Solicit feedback from those consuming the API</li>
-<li>Make changes to API layer to address feedback</li>
-<li>Repeat</li>
-</ol>
+<p>Usually it&rsquo;s skills and techniques that will transfer over from side-projects. Occasionally, you can just copy some of your side project code.</p>
 
+<h2>Side projects let you experiment without adversely affecting your day-job</h2>
 
-<p>A mock-response is one that does not change, even when API parameters do. It is hardcoded. If you request <code>GET /users/123</code> you get the same data as when requesting <code>GET /users/456</code>.</p>
+<p>Want to learn Haskell? Great! But don&rsquo;t then deploy it at work, and <strong>force</strong> other people to maintain your code.</p>
 
-<p>The point is to get something deployed as quickly as possible, and get feedback on it. When the API is more stable, the mock-responses can become dynamic and then persisted. Soliciting feedback is the highest priority until then. Nobody can write the perfect API the first time, and receiving and responding to feedback as early as possible saves development time later.</p>
+<p>Want to try out a theory about structuring an object-orientated codebase? You can, and if it doesn&rsquo;t work out, you won&rsquo;t have annoyed all of your colleagues.</p>
 
-<h2>Tools</h2>
+<p>Having a great job, or working on a great team, means that you&rsquo;re given time to learn or embrace different technologies or techniques. However, if you&rsquo;re not that lucky, side projects can give you the freedom to learn and experiment in ways you wouldn&rsquo;t normally be allowed to.</p>
 
-<p>There are several tools available to help you develop an API and iterate upon it. <a href="http://wiremock.org/">WireMock</a> can be configured with a routes file, and mock-responses, and can easily run <a href="http://wiremock.org/running-standalone.html">in standalone mode</a>. Just edit a couple of files, and deploy!</p>
+<h2>Side projects can die without negative consequences</h2>
 
-<p>If deployment is a problem, check out <a href="https://getsandbox.com/">getsandbox.com</a>. They provide a JavaScript sandbox to easily return some mock-responses.</p>
+<p>If you get bored with working on a side project, just stop working on it. A project with paying customers is not a side project. Nobody can honestly expect you to keep working for free on something you find boring.</p>
+
+<p>Work on something different for a while. If the side project doesn&rsquo;t interest you again, forget about it, and thank it for the experience and skills you gained whilst working on it.</p>
+
+<h2>Side projects can force you to think differently</h2>
+
+<p>Compared to your day job, side projects are subject to a different set of constraints. Different constraints means different problems to solve. Your decisions will be different as a result of this.</p>
+
+<p>The main constraint on my side projects is money. At most places I&rsquo;ve worked, the budget is usually huge in comparison to what I can set aside. EC2 instances costs nothing to a corporation, but ~$50/month, multiplied by three for redundancy and replication, soon make a dent in my own finances.</p>
+
+<p>This constraint has also led me to use a lot of free-tiers of hosted-database providers. If a company is willing to provide me with free services, then I&rsquo;m all ears. This was how I was introduced to NoSQL databases, and I gained a completely different perspective on how to store, and query, data.</p>
+
+<h2>Side projects count as experience</h2>
+
+<p>Always be learning. There is a famous quote by Malcolm Gladwell about how doing something for ten thousand hours can help achieve mastery. Whilst this quote is often <a href="https://www.reddit.com/r/IAmA/comments/2740ct/hi_im_malcolm_gladwell_author_of_the_tipping/chx6ku3">out of context</a>, everyone understands that you need to practice something in order to become better at it. The good news, is that you can practice your skills whilst working on a fun side-project.</p>
+
+<p>The second piece of good news, is that you can often use side projects as direct evidence to show off to potential employers. I&rsquo;ve often chatted about my side projects whilst being interviewed, and I&rsquo;ve often chatted about interviewees' side projects whilst I interviewed them. They&rsquo;re a great way to showcase your talents!</p>
 </div>
 
 
@@ -155,12 +166,12 @@
   
 
 
-<time datetime="2015-01-20T19:00:00+00:00" pubdate data-updated="true"></time>
+<time datetime="2016-06-15T11:00:00+01:00" pubdate data-updated="true"></time>
       
 
 <span class="categories">
   
-    <a class='category' href='/blog/categories/agile/'>agile</a>, <a class='category' href='/blog/categories/api-design/'>api-design</a>
+    <a class='category' href='/blog/categories/side-project/'>side-project</a>
   
 </span>
 
@@ -169,7 +180,7 @@
     
       <div class="sharing">
   
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://cjwebb.github.io/blog/2015/01/20/canned-responses/" data-via="colinjameswebb" data-counturl="http://cjwebb.github.io/blog/2015/01/20/canned-responses/" >Tweet</a>
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://cjwebb.github.io/blog/2016/06/15/the-virtues-of-side-projects/" data-via="colinjameswebb" data-counturl="http://cjwebb.github.io/blog/2016/06/15/the-virtues-of-side-projects/" >Tweet</a>
   
   
   
@@ -180,10 +191,8 @@
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2014/12/31/code2014/" title="Previous Post: #Code2014">&laquo; #Code2014</a>
+        <a class="basic-alignment left" href="/blog/2016/01/01/elm-in-octopress/" title="Previous Post: Using Elm in Octopress">&laquo; Using Elm in Octopress</a>
       
-      
-        <a class="basic-alignment right" href="/blog/2015/02/02/scalatest-futures/" title="Next Post: ScalaTest and Twitter Futures">ScalaTest and Twitter Futures &raquo;</a>
       
     </p>
   </footer>
@@ -256,8 +265,8 @@
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://cjwebb.github.io/blog/2015/01/20/canned-responses/';
-        var disqus_url = 'http://cjwebb.github.io/blog/2015/01/20/canned-responses/';
+        var disqus_identifier = 'http://cjwebb.github.io/blog/2016/06/15/the-virtues-of-side-projects/';
+        var disqus_url = 'http://cjwebb.github.io/blog/2016/06/15/the-virtues-of-side-projects/';
         var disqus_script = 'embed.js';
       
     (function () {
