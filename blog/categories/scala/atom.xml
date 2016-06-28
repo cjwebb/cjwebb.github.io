@@ -4,7 +4,7 @@
   <title><![CDATA[Category: scala | cjwebb.github.io]]></title>
   <link href="http://cjwebb.github.io/blog/categories/scala/atom.xml" rel="self"/>
   <link href="http://cjwebb.github.io/"/>
-  <updated>2016-06-15T20:22:57+01:00</updated>
+  <updated>2016-06-28T20:07:06+01:00</updated>
   <id>http://cjwebb.github.io/</id>
   <author>
     <name><![CDATA[Colin Webb]]></name>
@@ -12,6 +12,417 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Learning Akka Streams]]></title>
+    <link href="http://cjwebb.github.io/blog/2016/06/28/learning-akka-streams/"/>
+    <updated>2016-06-28T11:00:00+01:00</updated>
+    <id>http://cjwebb.github.io/blog/2016/06/28/learning-akka-streams</id>
+    <content type="html"><![CDATA[<p>This blog post differs from my usual ones; I&rsquo;m writing it as I learn something. As such, it is more of a story that contains errors and misunderstanding than a factual blog post.</p>
+
+<h2>Hello World</h2>
+
+<p>This blog post follows me trying to learn how to use <a href="http://doc.akka.io/docs/akka/2.4.7/scala/stream/stream-introduction.html">Akka Streams</a>. I haven&rsquo;t needed to use them before, and whenever I glance at the documentation, I usually get confused about just how many new terms are being introduced.</p>
+
+<p>Runnable code is available <a href="https://github.com/cjwebb/blog-code/tree/master/learning-akka-streams">here</a>. I&rsquo;ve included more type annotations that normal, as they will assist us discussing what is going on.</p>
+
+<p>We start by compiling and running the &lsquo;Hello World&rsquo; example in <a href="http://doc.akka.io/docs/akka/2.4.7/scala/stream/stream-quickstart.html#stream-quickstart-scala">the Quick Start Guide</a>.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.NotUsed</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.actor.ActorSystem</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.stream.</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.stream.scaladsl.</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">object</span> <span class="nc">HelloWorld</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">system</span> <span class="k">=</span> <span class="nc">ActorSystem</span><span class="o">()</span>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">materializer</span> <span class="k">=</span> <span class="nc">ActorMaterializer</span><span class="o">()&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">source</span><span class="k">:</span> <span class="kt">Source</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Source</span><span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="mi">100</span><span class="o">)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">source</span><span class="o">.</span><span class="n">runForeach</span><span class="o">(</span><span class="n">println</span><span class="o">)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">system</span><span class="o">.</span><span class="n">terminate</span><span class="o">()</span>
+</span><span class='line'><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p><code>Source</code> will be widely used. It represents the inputs to the stream.</p>
+
+<p>A couple of things stand out in the code. Firstly, the <code>ActorMaterializer</code> is new, compared to standard Akka. I have no idea what it does, but I&rsquo;m guessing it could have been named &ldquo;ActorFactory&rdquo;.</p>
+
+<p>Secondly, the <code>Source</code> takes two type parameters. The first is the type that the <code>Source</code> emits. The documentations says that &ldquo;the second one may signal that running the source produces some auxiliary value (e.g. a network source may provide information about the bound port or the peer’s address)&rdquo;. The first one makes sense. The second one doesn&rsquo;t yet. Things will hopefully become clearer once I write something else.</p>
+
+<p>Either way, this stream runs and prints out 1 to 100.</p>
+
+<h2>Using a Sink</h2>
+
+<blockquote><p>Source &ndash;> Sink</p></blockquote>
+
+<p>The first example uses a <code>Source</code>. It is not really a Stream. We just send everything to <code>stdout</code>. Let&rsquo;s use <code>Sink</code>, which are the outputs of a stream.</p>
+
+<p>There seem to be lots of kinds of <code>Sink</code>, including a <code>foreach</code> one, which we can use to <code>println</code> again.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.</span><span class="o">{</span><span class="nc">Done</span><span class="o">,</span> <span class="nc">NotUsed</span><span class="o">}</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.actor.ActorSystem</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.stream.</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.stream.scaladsl.</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">import</span> <span class="nn">scala.concurrent.Future</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">object</span> <span class="nc">UsingASink</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">system</span> <span class="k">=</span> <span class="nc">ActorSystem</span><span class="o">()</span>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">materializer</span> <span class="k">=</span> <span class="nc">ActorMaterializer</span><span class="o">()&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">source</span><span class="k">:</span> <span class="kt">Source</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Source</span><span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="mi">100</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">sink</span><span class="k">:</span> <span class="kt">Sink</span><span class="o">[</span><span class="kt">Any</span>, <span class="kt">Future</span><span class="o">[</span><span class="kt">Done</span><span class="o">]]</span> <span class="k">=</span> <span class="nc">Sink</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">source</span><span class="o">.</span><span class="n">runWith</span><span class="o">(</span><span class="n">sink</span><span class="o">)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">system</span><span class="o">.</span><span class="n">terminate</span><span class="o">()</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Interestingly, the type signature of this is <code>Sink[Any, Future[Done]]</code>. From reading the ScalaDoc, <code>Done</code> is essentially <code>Unit</code>, but they used included it so the code could also run on Java. We&rsquo;ve also used that second mysterious type parameter.</p>
+
+<p>ScalaDoc says &ldquo;The sink is materialized into a [[scala.concurrent.Future]]&rdquo;. Perhaps the ActorMaterializer has been used, and deals with side-effects? Let&rsquo;s keep going, and see if a more complicated example makes it easier to understand.</p>
+
+<h1>Simple Transform</h1>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Source &ndash;> Flow &ndash;> Sink</span></code></pre></td></tr></table></div></figure></p>
+
+<p>So far, we generate a Stream from an <code>Iterable</code>, send it to a <code>Sink</code>, and then print it out. Let&rsquo;s include an intermediate step, where we do some &ldquo;stream processing&rdquo;. For this, we need the <code>Flow</code> class. This is beginning to look more like the Stream I imagined.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.</span><span class="o">{</span><span class="nc">Done</span><span class="o">,</span> <span class="nc">NotUsed</span><span class="o">}</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.actor.ActorSystem</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.stream.</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.stream.scaladsl.</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">import</span> <span class="nn">scala.concurrent.Future</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">object</span> <span class="nc">SimpleTransform</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">system</span> <span class="k">=</span> <span class="nc">ActorSystem</span><span class="o">()</span>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">materializer</span> <span class="k">=</span> <span class="nc">ActorMaterializer</span><span class="o">()&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">source</span><span class="k">:</span> <span class="kt">Source</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Source</span><span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="mi">100</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">sink</span><span class="k">:</span> <span class="kt">Sink</span><span class="o">[</span><span class="kt">Any</span>, <span class="kt">Future</span><span class="o">[</span><span class="kt">Done</span><span class="o">]]</span> <span class="k">=</span> <span class="nc">Sink</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">helloTimesTen</span><span class="k">:</span> <span class="kt">Flow</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">String</span>, <span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Flow</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">map</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="n">s</span><span class="err">&quot;</span><span class="nc">Hello</span> <span class="n">$</span><span class="o">{</span><span class="n">i</span> <span class="o">*</span> <span class="mi">10</span><span class="o">}&amp;</span><span class="n">ldquo</span><span class="o">;)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">graph</span><span class="k">:</span> <span class="kt">RunnableGraph</span><span class="o">[</span><span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=</span> <span class="n">source</span> <span class="n">via</span> <span class="n">helloTimesTen</span> <span class="n">to</span> <span class="n">sink</span>
+</span><span class='line'>  <span class="n">graph</span><span class="o">.</span><span class="n">run</span><span class="o">()&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">system</span><span class="o">.</span><span class="n">terminate</span><span class="o">()</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>We discovered another type now; <code>RunnableGraph</code>. This is a &ldquo;Flow with attached input and output, can be executed.&rdquo;</p>
+
+<p>That makes sense. We&rsquo;ve attached a <code>Source</code>, and a <code>Sink</code>, to our <code>Flow</code>. Therefore it has input and output, and should work.</p>
+
+<p>RunnableGraph also specifies that it has a <code>ClosedShape</code>, which also hints at the role that a <code>Materializer</code> takes. I&rsquo;m still yet to figure them out.
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="o">/&lt;</span><span class="n">em</span><span class="o">&gt;</span>
+</span><span class='line'> <span class="o">*</span> <span class="nc">This</span> <span class="o">[[</span><span class="kt">Shape</span><span class="o">]]</span> <span class="n">is</span> <span class="n">used</span> <span class="k">for</span> <span class="n">graphs</span> <span class="n">that</span> <span class="n">have</span> <span class="n">neither</span> <span class="n">open</span> <span class="n">inputs</span> <span class="n">nor</span> <span class="n">open</span>
+</span><span class='line'> <span class="o">*</span> <span class="n">outputs</span><span class="o">.</span> <span class="nc">Only</span> <span class="n">such</span> <span class="n">a</span> <span class="o">[[</span><span class="kt">Graph</span><span class="o">]]</span> <span class="n">can</span> <span class="n">be</span> <span class="n">materialized</span> <span class="n">by</span> <span class="n">a</span> <span class="o">[[</span><span class="kt">Materializer</span><span class="o">]].</span>
+</span><span class='line'> <span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;/</span>
+</span><span class='line'><span class="k">sealed</span> <span class="k">abstract</span> <span class="k">class</span> <span class="nc">ClosedShape</span> <span class="k">extends</span> <span class="nc">Shape</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<h2>Graphs</h2>
+
+<p>All of our examples so far have been very linear. There has been no way of splitting the stream to do different pieces of work, or combine multiple sources.</p>
+
+<p>One use-case I can think of when using Akka Streams is to persist events on the stream to a database, in addition to continuing the stream processing.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Source &ndash;> Broadcast &ndash;> Flow &ndash;> Sink
+</span><span class='line'>               |
+</span><span class='line'>               &ndash;> Save to DB</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Akka Streams has a thing named <code>Broadcast</code> especially for this. However, constructing and using one is more complex than I imaged. You need to start using a mutable <code>GraphDSL.Builder</code>. The GraphDSL implies that we now need to learn what lots of funny symbols mean, such as <code>~&gt;</code>.</p>
+
+<p>We need to build up a <code>Graph[ClosedShape, Mat]</code> where <code>Mat</code> is one of those Materializers that I still don&rsquo;t understand.</p>
+
+<p>Interesting, it seems as though <code>Graph</code> doesn&rsquo;t type-check very well. It is possible to construct and run a Graph that doesn&rsquo;t do anything except fail at runtime. The following code gets checked via a <code>require</code> assertion when running the code:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">isRunnable</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="n">inPorts</span><span class="o">.</span><span class="n">isEmpty</span> <span class="o">&amp;</span><span class="n">amp</span><span class="o">;&amp;</span><span class="n">amp</span><span class="o">;</span> <span class="n">outPorts</span><span class="o">.</span><span class="n">isEmpty</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>I&rsquo;m not really sure how one would go about asserting this at compile-time. It definitely seems possible though, as other Scala libraries have similar builder patterns that type-check. Hopefully this will be addressed in a future release.</p>
+
+<p>Anyway, lets try and build a Stream that saves events to a DB.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.actor.ActorSystem</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.stream.</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.stream.scaladsl.</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.</span><span class="o">{</span><span class="nc">Done</span><span class="o">,</span> <span class="nc">NotUsed</span><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">import</span> <span class="nn">scala.concurrent.</span><span class="o">{</span><span class="nc">ExecutionContext</span><span class="o">,</span> <span class="nc">Future</span><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">object</span> <span class="nc">SendToDB</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">system</span> <span class="k">=</span> <span class="nc">ActorSystem</span><span class="o">()</span>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">ec</span> <span class="k">=</span> <span class="n">system</span><span class="o">.</span><span class="n">dispatcher</span>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">materializer</span> <span class="k">=</span> <span class="nc">ActorMaterializer</span><span class="o">()&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">intSource</span><span class="k">:</span> <span class="kt">Source</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Source</span><span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="mi">100</span><span class="o">)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">helloTimesTen</span><span class="k">:</span> <span class="kt">Flow</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">String</span>, <span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Flow</span><span class="o">[</span><span class="kt">Int</span><span class="o">].</span><span class="n">map</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="n">s</span><span class="s">&quot;Hello ${i * 10}&amp;ldquo;)</span>
+</span><span class='line'><span class="s">  val intToEvent: Flow[Int, DB.Event, NotUsed] = Flow[Int].map(i =&gt; DB.Event(s&quot;</span><span class="nc">Event</span> <span class="nc">$i</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;))&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">printlnSink</span><span class="k">:</span> <span class="kt">Sink</span><span class="o">[</span><span class="kt">Any</span>, <span class="kt">Future</span><span class="o">[</span><span class="kt">Done</span><span class="o">]]</span> <span class="k">=</span> <span class="nc">Sink</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">dbSink</span> <span class="k">=</span> <span class="nc">Flow</span><span class="o">[</span><span class="kt">DB.Event</span><span class="o">].</span><span class="n">map</span><span class="o">(</span><span class="nc">DB</span><span class="o">.</span><span class="n">persistEvent</span><span class="o">).</span><span class="n">toMat</span><span class="o">(</span><span class="nc">Sink</span><span class="o">.</span><span class="n">ignore</span><span class="o">)(</span><span class="nc">Keep</span><span class="o">.</span><span class="n">right</span><span class="o">).</span><span class="n">named</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">dbSink</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">graph</span> <span class="k">=</span> <span class="nc">RunnableGraph</span><span class="o">.</span><span class="n">fromGraph</span><span class="o">(</span><span class="nc">GraphDSL</span><span class="o">.</span><span class="n">create</span><span class="o">()</span> <span class="o">{</span> <span class="k">implicit</span> <span class="n">builder</span><span class="k">:</span> <span class="kt">GraphDSL.Builder</span><span class="o">[</span><span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=&gt;</span>
+</span><span class='line'>    <span class="k">import</span> <span class="nn">GraphDSL.Implicits._</span>
+</span><span class='line'>    <span class="k">val</span> <span class="n">broadcast</span> <span class="k">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">add</span><span class="o">(</span><span class="nc">Broadcast</span><span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s">&quot;2&quot;</span><span class="o">&gt;</span><span class="nc">Int</span><span class="o">&lt;/</span><span class="n">a</span><span class="o">&gt;)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">intSource</span> <span class="o">~&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">broadcast</span> <span class="o">~&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">helloTimesTen</span> <span class="o">~&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">printlnSink</span>
+</span><span class='line'>             <span class="n">broadcast</span> <span class="o">~&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">intToEvent</span> <span class="o">~&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">dbSink</span>
+</span><span class='line'>
+</span><span class='line'><span class="nc">ClosedShape</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="o">})&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">graph</span><span class="o">.</span><span class="n">run</span><span class="o">()&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">system</span><span class="o">.</span><span class="n">terminate</span><span class="o">()</span>
+</span><span class='line'><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">object</span> <span class="nc">DB</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">case</span> <span class="k">class</span> <span class="nc">Event</span><span class="o">(</span><span class="n">msg</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">def</span> <span class="n">persistEvent</span><span class="o">(</span><span class="n">e</span><span class="k">:</span> <span class="kt">Event</span><span class="o">)(</span><span class="k">implicit</span> <span class="n">ec</span><span class="k">:</span> <span class="kt">ExecutionContext</span><span class="o">)</span><span class="k">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span><span class='line'>    <span class="c1">// pretend that some DB IO happens here</span>
+</span><span class='line'>    <span class="n">println</span><span class="o">(</span><span class="n">s</span><span class="s">&quot;persisting $e&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="nc">Future</span> <span class="o">{}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>There is a lot of new stuff here. Starting with the easiest thing; I&rsquo;ve renamed some vals to reflect what they do now. We also have a new <code>Flow</code> named <code>intToEvent</code> which maps an <code>Int</code> to a <code>DB.Event</code> case class.</p>
+
+<p>We also have the <code>GraphDSL</code> syntax, and implicit conversions. <code>~&gt;</code> means &ldquo;Add Edge to Graph&rdquo; in my head. As DSLs go, it isn&rsquo;t too bad. Arrows are Stream processing go hand-in-hand. I&rsquo;ll try and use this syntax from now on.
+The <code>Broadcast</code> class also checks at compile time that we&rsquo;ve linked all the specified &lsquo;ports&rsquo;. In our example, we create the <code>Broadcast</code> and say it will have two things listening to it. If we only connect, one, we get a runtime error.</p>
+
+<p>Lastly, we have a new <code>Sink</code> named <code>dbSink</code>. I basically copied the code from inside the <code>printlnSink</code> and changed the <code>map</code> method. It seems as though in order to perform actions on a Stream, we need to materialize the values contained inside. I now assume that Streams are inherently lazy, and Materializing is the act of evaluating the Stream.</p>
+
+<p>We need to dig into Materializers, and finally figure them out.</p>
+
+<h2>Basic Materializer</h2>
+
+<p>Having read the docs some more, it seems as though &ldquo;materialization&rdquo; is the thing that actually runs our Stream. When using Akka, actors are created (or materialized) in order to do the work. Makes sense. I can&rsquo;t help but feel that this should have been more obvious at the start&hellip;</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Source ~> Sink</span></code></pre></td></tr></table></div></figure></p>
+
+<p>We return to the simplest graph, with just a Source and a Sink. The Source generates Ints, and the Sink just takes the first one.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">import</span> <span class="nn">akka.NotUsed</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.actor.ActorSystem</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.stream.</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">akka.stream.scaladsl.</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">import</span> <span class="nn">scala.concurrent.duration.Duration</span>
+</span><span class='line'><span class="k">import</span> <span class="nn">scala.concurrent.</span><span class="o">{</span><span class="nc">Await</span><span class="o">,</span> <span class="nc">Future</span><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">object</span> <span class="nc">BasicMaterializer</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">system</span> <span class="k">=</span> <span class="nc">ActorSystem</span><span class="o">()</span>
+</span><span class='line'>  <span class="k">implicit</span> <span class="k">val</span> <span class="n">materializer</span> <span class="k">=</span> <span class="nc">ActorMaterializer</span><span class="o">()&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">intSource</span><span class="k">:</span> <span class="kt">Source</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">NotUsed</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Source</span><span class="o">(</span><span class="mi">1</span> <span class="n">to</span> <span class="mi">100</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">headSink</span><span class="k">:</span> <span class="kt">Sink</span><span class="o">[</span><span class="kt">Int</span>, <span class="kt">Future</span><span class="o">[</span><span class="kt">Int</span><span class="o">]]</span> <span class="k">=</span> <span class="nc">Sink</span><span class="o">.</span><span class="n">head</span><span class="o">[</span><span class="kt">Int</span><span class="o">]&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">val</span> <span class="n">graph1</span><span class="k">:</span> <span class="kt">RunnableGraph</span><span class="o">[</span><span class="kt">Future</span><span class="o">[</span><span class="kt">Int</span><span class="o">]]</span> <span class="k">=</span> <span class="n">intSource</span><span class="o">.</span><span class="n">toMat</span><span class="o">(</span><span class="n">headSink</span><span class="o">)(</span><span class="nc">Keep</span><span class="o">.</span><span class="n">right</span><span class="o">)</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">graph2</span><span class="k">:</span> <span class="kt">RunnableGraph</span><span class="o">[</span><span class="kt">NotUsed</span><span class="o">]</span>     <span class="k">=</span> <span class="n">intSource</span><span class="o">.</span><span class="n">toMat</span><span class="o">(</span><span class="n">headSink</span><span class="o">)(</span><span class="nc">Keep</span><span class="o">.</span><span class="n">left</span><span class="o">)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="c1">// we can only get values from graph1</span>
+</span><span class='line'>  <span class="k">val</span> <span class="n">result</span> <span class="k">=</span> <span class="nc">Await</span><span class="o">.</span><span class="n">result</span><span class="o">(</span><span class="n">graph1</span><span class="o">.</span><span class="n">run</span><span class="o">(),</span> <span class="nc">Duration</span><span class="o">(</span><span class="mi">3</span><span class="o">,&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">seconds</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;))&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">println</span><span class="o">(</span><span class="n">result</span><span class="o">)&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">system</span><span class="o">.</span><span class="n">terminate</span><span class="o">()</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>I&rsquo;ve included code of two RunnableGraphs. They only vary in second arguments; <code>Keep.right</code> versus <code>Keep.left</code>. This seems to be the key to Materializers, and the mysterious second type parameter included everywhere in our Source, Flows, and Sinks.</p>
+
+<p>In order to get any values out of a Stream flowing left to right, we need to keep the right values. Presumably, in a stream going the other way, we need to keep the left values. In our case, the right side of our graph has <code>Future[Int]</code> as the second type parameter. This is the one we need.</p>
+
+<p>The types on these methods are very obvious; given two types select the one on the left, or the right.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">left</span> <span class="o">[</span><span class="kt">L</span>, <span class="kt">R</span><span class="o">]</span><span class="k">:</span> <span class="o">(</span><span class="kt">L</span><span class="o">,</span> <span class="kt">R</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">L</span>
+</span><span class='line'><span class="k">def</span> <span class="n">right</span><span class="o">[</span><span class="kt">L</span>, <span class="kt">R</span><span class="o">]</span><span class="k">:</span> <span class="o">(</span><span class="kt">L</span><span class="o">,</span> <span class="kt">R</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">R</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>This now also answers my questions above about the previously used <code>Sink</code> named <code>dbSink</code>. Here&rsquo;s the implementation again:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="nc">Flow</span><span class="o">[</span><span class="kt">DB.Event</span><span class="o">].</span><span class="n">map</span><span class="o">(</span><span class="nc">DB</span><span class="o">.</span><span class="n">persistEvent</span><span class="o">).</span><span class="n">toMat</span><span class="o">(</span><span class="nc">Sink</span><span class="o">.</span><span class="n">ignore</span><span class="o">)(</span><span class="nc">Keep</span><span class="o">.</span><span class="n">right</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p><code>DB.persistEvent</code> returns a <code>Future[Unit]</code>. In order to actually evalutate these Futures, we need to materialize the stream. As we&rsquo;re Keeping right, we pass our futures into <code>Sink.ignore</code>. If we kept left, we pass <code>NotUsed</code>. Whilst ignoring them doesn&rsquo;t sound very useful, this actually runs them before ignoring whatever they return.</p>
+
+<p>I feel like I understand roughly how Akka Streams work now.</p>
+
+<p>Here&rsquo;s a recap.</p>
+
+<ul>
+<li>Sources generate values.</li>
+<li>Sinks consume values.</li>
+<li>Materialization is the process of running the Stream, and getting your Sink to do something.</li>
+<li>Flows are linear transformations.</li>
+<li>Graphs can be modelled with Broadcast (and Merge, but we didn&rsquo;t try them out).</li>
+</ul>
+
+
+<p>This is enough blog post for now. I&rsquo;d like to continue learning Akka Streams; they seem a lot easier to use than Actors, and patterns are built in. Streams are more type-safe than Actors too, which hopefully will permit writing more maintainable code.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Using Play-Framework's PathBindable]]></title>
@@ -591,178 +1002,6 @@
 </span></code></pre></td></tr></table></div></figure></p>
 
 <p>As per usual, <a href="https://github.com/cjwebb/blog-code/tree/master/aggregation-services">working code is available on Github</a>.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Fibonacci Numbers in Scala]]></title>
-    <link href="http://cjwebb.github.io/blog/2013/10/30/fibonacci-numbers-in-scala/"/>
-    <updated>2013-10-30T20:45:00+00:00</updated>
-    <id>http://cjwebb.github.io/blog/2013/10/30/fibonacci-numbers-in-scala</id>
-    <content type="html"><![CDATA[<p>Working out the <a href="http://en.wikipedia.org/wiki/Fibonacci_number">Fibonacci numbers</a> are a standard exercise when learning a programming language, or just refreshing your knowledge. Below, is a recap of various ways to calculate them in Scala. <a href="https://gist.github.com/cjwebb/7239843">All the code is available in a handy gist</a>.</p>
-
-<p>First, a quick recap of the beginning of the series. If this is unfamiliar to you, please click the first link in this post!</p>
-
-<blockquote><p>0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55</p></blockquote>
-
-<h3>Nth Fibonacci Number</h3>
-
-<blockquote><p>Given a number n, return the corresponding Fibonacci number from the sequence.</p></blockquote>
-
-<p>Lets start off really basically, and use a while loop.</p>
-
-<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_iter</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
-</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">2</span><span class="o">)</span> <span class="n">n</span>
-</span><span class='line'>  <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="n">ans</span> <span class="k">=</span> <span class="mi">0</span>
-</span><span class='line'>    <span class="k">var</span> <span class="n">n1</span> <span class="k">=</span> <span class="mi">0</span>
-</span><span class='line'>    <span class="k">var</span> <span class="n">n2</span> <span class="k">=</span> <span class="mi">1</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">var</span> <span class="n">i</span> <span class="k">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span>
-</span><span class='line'><span class="k">while</span> <span class="o">(</span><span class="n">i</span> <span class="o">&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>  <span class="n">i</span> <span class="k">=</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span>
-</span><span class='line'>  <span class="n">ans</span> <span class="k">=</span> <span class="n">n1</span> <span class="o">+</span> <span class="n">n2</span>
-</span><span class='line'>  <span class="n">n1</span> <span class="k">=</span> <span class="n">n2</span>
-</span><span class='line'>  <span class="n">n2</span> <span class="k">=</span> <span class="n">ans</span>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">ans</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure></p>
-
-<p>The first thing to notice about the Fibonacci sequence is that the first two numbers match their indexes. The 0th number is 0, and the 1st number is 1. These form the foundation of later calculations, and is the reason for the if-statement on line 2 of the code snippet.</p>
-
-<p>We can do better though. Fibonacci sequences rely on previous calculations, so are an ideal opportunity to use recursion:</p>
-
-<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="o">{</span>
-</span><span class='line'>  <span class="n">n</span> <span class="k">match</span> <span class="o">{</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">i</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">2</span> <span class="k">=&gt;</span> <span class="n">i</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">i</span> <span class="k">=&gt;</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">+</span> <span class="n">fib_recur</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="o">)</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure></p>
-
-<p>This looks good! Basically only two lines of code, and its fairly easy to follow. However, the keen-eyed amongst you may note that for large values of n, a <code>StackOverflowException</code> may be thrown! To prevent these exceptions when writing recursive code, it is encouraged that we write in a tail-recursive form. <a href="http://blog.richdougherty.com/2009/04/tail-calls-tailrec-and-trampolines.html">The compiler will attempt to optimise the recursion</a>.</p>
-
-<p>Also note that for large n&rsquo;s, we need to use <code>BigInt</code> to avoid integer overflow.</p>
-
-<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_tailrec</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
-</span><span class='line'>  <span class="nd">@tailrec</span>
-</span><span class='line'>  <span class="k">def</span> <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">a</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Int</span><span class="o">=</span> <span class="o">{</span>
-</span><span class='line'>    <span class="n">n</span> <span class="k">match</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">case</span> <span class="mi">0</span> <span class="k">=&gt;</span> <span class="n">b</span>
-</span><span class='line'>      <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="o">,</span> <span class="n">a</span><span class="o">)</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="n">rec</span><span class="o">(</span><span class="n">n</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">)</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure></p>
-
-<p>Excellent!</p>
-
-<h3>Fibonacci Series, of length n</h3>
-
-<blockquote><p>Given a number n, return the fibonacci series of length n.</p></blockquote>
-
-<p>This time, instead of returning one number, we want a whole series. Well, we already have a function that returns the nth Fibonacci number, lets just use that!</p>
-
-<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">bad_fib</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="mi">0</span> <span class="n">to</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="n">map</span> <span class="o">(</span><span class="n">n</span> <span class="k">=&gt;</span> <span class="n">fib_tailrec</span><span class="o">(</span><span class="n">n</span><span class="o">))</span>
-</span></code></pre></td></tr></table></div></figure></p>
-
-<p>Whilst we should really benchmark this, to see exactly how terrible it is, we will assume that is too inefficient; it forgets all previous calculations when trying to work out the next number.</p>
-
-<p>How else can we do this then? We can use an accumulator:</p>
-
-<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_acc</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
-</span><span class='line'>  <span class="nd">@tailrec</span>
-</span><span class='line'>  <span class="k">def</span> <span class="n">acc</span><span class="o">(</span><span class="n">list</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">],</span> <span class="n">i</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">&gt;=</span> <span class="n">n</span> <span class="o">||</span> <span class="n">n</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">2</span><span class="o">)</span> <span class="n">list</span>
-</span><span class='line'>    <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">val</span> <span class="n">newList</span> <span class="k">=</span> <span class="n">list</span> <span class="o">:::</span> <span class="nc">List</span><span class="o">(</span><span class="n">list</span><span class="o">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="o">)+</span><span class="n">list</span><span class="o">(</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="o">))</span>
-</span><span class='line'>      <span class="n">acc</span><span class="o">(</span><span class="n">newList</span><span class="o">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">)</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>  <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="n">acc</span><span class="o">(</span><span class="nc">List</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">1</span><span class="o">),</span> <span class="mi">2</span><span class="o">).</span><span class="n">take</span><span class="o">(</span><span class="n">n</span><span class="o">)</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure></p>
-
-<p>This has a nasty list creation to append the number onto the end of the list. We have to pass around <code>i</code> everywhere.
-Scala&rsquo;s <code>List</code> is a Linked List. Appending is hard, but prepending is easy. This is what the cons operator is for! By constructing the list in reverse we can optimise for a linked list, and remove the <code>i</code> value:</p>
-
-<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_acc2</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">s</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">List</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
-</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="k">=</span> <span class="mi">2</span><span class="o">)</span> <span class="n">s</span><span class="o">.</span><span class="n">reverse</span>
-</span><span class='line'>  <span class="k">else</span> <span class="n">fib_acc2</span><span class="o">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="n">s</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">+</span> <span class="n">s</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">::</span> <span class="n">s</span><span class="o">)</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure></p>
-
-<p>Marvellous. It does get better though. For those of you familiar with <code>Stream</code>, you can do this:</p>
-
-<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='scala'><span class='line'><span class="k">def</span> <span class="n">fib_stream</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span>
-</span><span class='line'>  <span class="k">lazy</span> <span class="k">val</span> <span class="n">fibs</span><span class="k">:</span> <span class="kt">Stream</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="mi">0</span> <span class="o">#::</span> <span class="n">fibs</span><span class="o">.</span><span class="n">scanLeft</span><span class="o">(</span><span class="mi">1</span><span class="o">)(&lt;</span><span class="n">em</span><span class="o">&gt;</span> <span class="o">+</span> <span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;)</span>
-</span><span class='line'>  <span class="n">fibs</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="n">n</span><span class="o">).</span><span class="n">toList</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure></p>
-
-<p>The crazy <code>#::</code> operator prepends an element to the start of the Stream, and <code>scanLeft</code> works just like <code>foldLeft</code> but returns a Stream. <a href="http://www.scala-lang.org/api/current/index.html#scala.collection.immutable.Stream">The Scaladoc for Stream</a> actually contains a different version of how to calculate a Fibonacci sequence, but I prefer to use <code>scanLeft</code> for its terseness, and the analogy with <code>foldLeft</code>.</p>
 ]]></content>
   </entry>
   
