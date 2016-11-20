@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: mongodb | cjwebb.github.io]]></title>
+  <link href="http://cjwebb.github.io/blog/categories/mongodb/atom.xml" rel="self"/>
+  <link href="http://cjwebb.github.io/"/>
+  <updated>2016-11-20T15:02:26+00:00</updated>
+  <id>http://cjwebb.github.io/</id>
+  <author>
+    <name><![CDATA[Colin Webb]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Using MongoDB TTL Collections to Manage User Registrations]]></title>
+    <link href="http://cjwebb.github.io/blog/2012/12/17/mongodb-ttl-collections/"/>
+    <updated>2012-12-17T11:00:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2012/12/17/mongodb-ttl-collections</id>
+    <content type="html"><![CDATA[<p><a href="https://docs.mongodb.com/manual/tutorial/expire-data/">TTL Collections</a> were introduced in MongoDB 2.2. You are now able to create an index which triggers the deletion of a document after the TTL time passes.</p>
+
+<p>One such use of TTL collections is temporarily storing user sign-ups. A common solution for a website to verify a user’s email address is to send the user a link to click on to activate their account. TTL collections can be used to remove users who never activate their account. This was the solution I used when implementing a web app.</p>
+
+<p>Suppose we have If we have two collections inside MongoDB: user_invites, users. We then follow this flow:</p>
+
+<ul>
+<li>User fills in web-form with their invite code.</li>
+<li>Upon submission, a UUID is generated.</li>
+<li>We create a new document in user_invites, with all their details and the UUID:</li>
+</ul>
+
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>  &ldquo;_id&rdquo; : ObjectId(“505a1614001b9c1a9cb10803"),
+</span><span class='line'>  &ldquo;password&rdquo; : &ldquo;$2a$12$vCew7zzXqtyRGKQV4xfSZ.KbmmCRMx.pVJD6DesTLrOvuUghB5Oeu&rdquo;,
+</span><span class='line'>  &ldquo;expiry_time&rdquo; : ISODate(“2012-10-21T18:59:31.753Z"),
+</span><span class='line'>  &ldquo;invite_code&rdquo; : &ldquo;an-invite-code&rdquo;,
+</span><span class='line'>  &ldquo;activation_code&rdquo; : &ldquo;cbcff14&rdquo;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure></p>
+
+<ul>
+<li>We send the user an email to the email address they specified, with a URL to click on. This URL contains the UUID.</li>
+<li>When the link is clicked on, we look up the user by the UUID and move all the information into the users collections.</li>
+</ul>
+
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>  &ldquo;_id&rdquo; : ObjectId(&ldquo;504ae6e2001b9c0548ab0b64&rdquo;),
+</span><span class='line'>  &ldquo;password&rdquo; : &ldquo;$2a$12$vCew7zzXqtyRGKQV4xfSZ.KbmmCRMx.pVJD6DesTLrOvuUghB5Oeu&rdquo;,
+</span><span class='line'>  &ldquo;email&rdquo; : &ldquo;&lt;a href="&#x6d;&#x61;&#x69;&#x6c;&#x74;&#111;&#x3a;&#97;&#x6e;&#x5f;&#101;&#109;&#x61;&#x69;&#108;&#x40;&#97;&#x64;&#x64;&#x72;&#x65;&#x73;&#x73;&#x2e;&#99;&#x6f;&#109;">&#x61;&#x6e;&#x5f;&#101;&#109;&#97;&#x69;&#x6c;&#x40;&#97;&#x64;&#100;&#x72;&#101;&#115;&#x73;&#x2e;&#x63;&#111;&#x6d;&lt;/a>&rdquo;,
+</span><span class='line'>  &ldquo;created_date&rdquo; : ISODate(“2012-09-18T18:59:31.753Z")
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure></p>
+
+<p>If the URL is never clicked on, a background MongoDb process deletes the user_invite document after the time specified in the TTL index.</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>{
+</span><span class='line'>  &ldquo;v&rdquo; : 1,
+</span><span class='line'>  &ldquo;key&rdquo; : { &ldquo;expiry_time&rdquo; : 1 },
+</span><span class='line'>  &ldquo;ns&rdquo; : &ldquo;colin.user_invites&rdquo;,
+</span><span class='line'>  &ldquo;name&rdquo; : &ldquo;expiry_time_1&rdquo;,
+</span><span class='line'>  &ldquo;expireAfterSeconds&rdquo; : 1
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure></p>
+
+<p>Using this method, we can be sure that our users have a valid email address, and that they’ve actually visited the site.</p>
+]]></content>
+  </entry>
+  
+</feed>
