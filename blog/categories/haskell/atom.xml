@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: haskell | cjwebb.github.io]]></title>
+  <link href="http://cjwebb.github.io/blog/categories/haskell/atom.xml" rel="self"/>
+  <link href="http://cjwebb.github.io/"/>
+  <updated>2016-12-16T20:12:08+00:00</updated>
+  <id>http://cjwebb.github.io/</id>
+  <author>
+    <name><![CDATA[Colin Webb]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Getting Started with Haskell's Warp]]></title>
+    <link href="http://cjwebb.github.io/blog/2016/12/16/getting-started-with-haskells-warp/"/>
+    <updated>2016-12-16T21:00:00+00:00</updated>
+    <id>http://cjwebb.github.io/blog/2016/12/16/getting-started-with-haskells-warp</id>
+    <content type="html"><![CDATA[<p>I recently started playing with Haskell&rsquo;s <a href="http://www.aosabook.org/en/posa/warp.html">Warp</a> in my effort to learn Haskell. Warp is small and fast web server, and doesn&rsquo;t come bundled with much. It also has no &ldquo;magic&rdquo; in it, which I think is a very good thing.</p>
+
+<p>My hello-world program for any web server, is to respond with <code>{"hello":"world"}</code>. Here it is:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="cm">{-# LANGUAGE OverloadedStrings #-}</span>
+</span><span class='line'><span class="cm">{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="kr">module</span> <span class="nn">Main</span> <span class="kr">where</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="kr">import</span> <span class="nn">Network.Wai</span> <span class="p">(</span><span class="nf">responseLBS</span><span class="p">,</span> <span class="kt">Application</span><span class="p">,</span> <span class="kt">Response</span><span class="p">,</span> <span class="nf">rawPathInfo</span><span class="p">)</span>
+</span><span class='line'><span class="kr">import</span> <span class="nn">Network.Wai.Handler.Warp</span> <span class="p">(</span><span class="nf">run</span><span class="p">)</span>
+</span><span class='line'><span class="kr">import</span> <span class="nn">Network.HTTP.Types</span> <span class="p">(</span><span class="nf">status200</span><span class="p">,</span> <span class="nf">status404</span><span class="p">)</span>
+</span><span class='line'><span class="kr">import</span> <span class="nn">Network.HTTP.Types.Header</span> <span class="p">(</span><span class="nf">hContentType</span><span class="p">)</span>
+</span><span class='line'><span class="kr">import</span> <span class="nn">Data.Aeson</span>
+</span><span class='line'><span class="kr">import</span> <span class="nn">GHC.Generics</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="kr">data</span> <span class="kt">Hello</span> <span class="ow">=</span> <span class="kt">Hello</span> <span class="p">{</span> <span class="n">hello</span> <span class="ow">::</span> <span class="kt">String</span> <span class="p">}</span> <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Generic</span><span class="p">,</span> <span class="kt">ToJSON</span><span class="p">)</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">main</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="nb">()</span>
+</span><span class='line'><span class="nf">main</span> <span class="ow">=</span> <span class="kr">do</span>
+</span><span class='line'>  <span class="kr">let</span> <span class="n">port</span> <span class="ow">=</span> <span class="mi">3000</span>
+</span><span class='line'>  <span class="n">putStrLn</span> <span class="o">$</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="kt">Listening</span> <span class="n">on</span> <span class="n">port</span> <span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span> <span class="o">++</span> <span class="n">show</span> <span class="n">port</span>
+</span><span class='line'>  <span class="n">run</span> <span class="n">port</span> <span class="n">app</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">app</span> <span class="ow">::</span> <span class="kt">Application</span>
+</span><span class='line'><span class="nf">app</span> <span class="n">req</span> <span class="n">res</span> <span class="ow">=</span>
+</span><span class='line'>  <span class="n">res</span> <span class="o">$</span> <span class="kr">case</span> <span class="n">rawPathInfo</span> <span class="n">req</span> <span class="kr">of</span>
+</span><span class='line'>    <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="o">/&amp;</span><span class="n">rdquo</span><span class="p">;</span> <span class="ow">-&gt;</span> <span class="n">helloRoute</span>
+</span><span class='line'>    <span class="kr">_</span>   <span class="ow">-&gt;</span> <span class="n">notFoundRoute</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">helloRoute</span> <span class="ow">::</span> <span class="kt">Response</span>
+</span><span class='line'><span class="nf">helloRoute</span> <span class="ow">=</span>
+</span><span class='line'>  <span class="n">responseLBS</span>
+</span><span class='line'>  <span class="n">status200</span>
+</span><span class='line'>  <span class="p">[(</span><span class="n">hContentType</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">application</span><span class="o">/</span><span class="n">json</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;)]</span>
+</span><span class='line'>  <span class="o">.</span> <span class="n">encode</span> <span class="o">$</span> <span class="kt">Hello</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="kt">World</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">notFoundRoute</span> <span class="ow">::</span> <span class="kt">Response</span>
+</span><span class='line'><span class="nf">notFoundRoute</span> <span class="ow">=</span>
+</span><span class='line'>  <span class="n">responseLBS</span>
+</span><span class='line'>  <span class="n">status404</span>
+</span><span class='line'>  <span class="p">[(</span><span class="n">hContentType</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">application</span><span class="o">/</span><span class="n">json</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;)]</span>
+</span><span class='line'>  <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="mi">404</span> <span class="o">-</span> <span class="kt">Not</span> <span class="kt">Found</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>As you can see, the code has a <code>main</code> function that runs the <code>app</code>. This <code>app</code> just matches on routes, and responds with <code>HTTP 200 OK</code> on the root, or <code>HTTP 404 Not Found</code>. These are returned by different functions which returning <code>Response</code> types, and contain most of the hard parts of this code.</p>
+
+<p>Talking of hard parts, the thing I had the most difficultly with was:</p>
+
+<h3>Working out what <code>responseLBS</code> meant, and how to use it</h3>
+
+<p><code>responseLBS</code> means &ldquo;respond with a LazyByteString&rdquo;. LazyByteString seems to be the standard way of dealing with Strings in Warp. Their laziness, and serialisation format, apparently yields very high performance.</p>
+
+<p>However, using them is not so simple. Unless you convert from a normal String to a LazyByteString, you receive this compiler error:</p>
+
+<p><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Couldn&rsquo;t match expected type
+</span><span class='line'>‘bytestring-0.10.8.1:Data.ByteString.Internal.ByteString’
+</span><span class='line'>with actual type ‘[Char]’</span></code></pre></td></tr></table></div></figure></p>
+
+<p>The <code>OverloadedStrings</code> pragma on the first line makes responseLBS usable, but providing a typeclass that automatically converts Strings to LazyByteStrings. It took me a while to realise this.</p>
+
+<h2>Summary</h2>
+
+<p>One of the best things about this code was the experience writing it. Once it compiled, it worked. It took a while to work out, but it was all helpfully guided by the compiler.</p>
+
+<p>I think I&rsquo;d probably benefit from an IDE for Haskell, as I spend much of my time in IntelliJ coding Scala. Discovering the necessary imports was the trickiest part of coding in the Atom Editor. If you have any recommendations, please send them my way!</p>
+
+<p>IDE&rsquo;s aside, if coding in Haskell is always this pleasant, I&rsquo;ll be very pleased!</p>
+]]></content>
+  </entry>
+  
+</feed>

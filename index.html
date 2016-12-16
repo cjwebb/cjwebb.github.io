@@ -9,7 +9,7 @@
   <meta name="author" content="Colin Webb">
 
   
-  <meta name="description" content="This blog post differs from my usual ones; I&rsquo;m writing it as I learn something. As such, it is more of a story that contains errors and &hellip;">
+  <meta name="description" content="I recently started playing with Haskell&rsquo;s Warp in my effort to learn Haskell. Warp is small and fast web server, and doesn&rsquo;t come bundled &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -77,6 +77,155 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/12/16/getting-started-with-haskells-warp/">Getting Started With Haskell's Warp</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-12-16T21:00:00+00:00" pubdate data-updated="true"></time>
+        
+         | <a href="/blog/2016/12/16/getting-started-with-haskells-warp/#disqus_thread">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I recently started playing with Haskell&rsquo;s <a href="http://www.aosabook.org/en/posa/warp.html">Warp</a> in my effort to learn Haskell. Warp is small and fast web server, and doesn&rsquo;t come bundled with much. It also has no &ldquo;magic&rdquo; in it, which I think is a very good thing.</p>
+
+<p>My hello-world program for any web server, is to respond with <code>{"hello":"world"}</code>. Here it is:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+</pre></td><td class='code'><pre><code class='haskell'><span class='line'><span class="cm">{-# LANGUAGE OverloadedStrings #-}</span>
+</span><span class='line'><span class="cm">{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kr">module</span> <span class="nn">Main</span> <span class="kr">where</span>
+</span><span class='line'>
+</span><span class='line'><span class="kr">import</span> <span class="nn">Network.Wai</span> <span class="p">(</span><span class="nf">responseLBS</span><span class="p">,</span> <span class="kt">Application</span><span class="p">,</span> <span class="kt">Response</span><span class="p">,</span> <span class="nf">rawPathInfo</span><span class="p">)</span>
+</span><span class='line'><span class="kr">import</span> <span class="nn">Network.Wai.Handler.Warp</span> <span class="p">(</span><span class="nf">run</span><span class="p">)</span>
+</span><span class='line'><span class="kr">import</span> <span class="nn">Network.HTTP.Types</span> <span class="p">(</span><span class="nf">status200</span><span class="p">,</span> <span class="nf">status404</span><span class="p">)</span>
+</span><span class='line'><span class="kr">import</span> <span class="nn">Network.HTTP.Types.Header</span> <span class="p">(</span><span class="nf">hContentType</span><span class="p">)</span>
+</span><span class='line'><span class="kr">import</span> <span class="nn">Data.Aeson</span>
+</span><span class='line'><span class="kr">import</span> <span class="nn">GHC.Generics</span>
+</span><span class='line'>
+</span><span class='line'><span class="kr">data</span> <span class="kt">Hello</span> <span class="ow">=</span> <span class="kt">Hello</span> <span class="p">{</span> <span class="n">hello</span> <span class="ow">::</span> <span class="kt">String</span> <span class="p">}</span> <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Generic</span><span class="p">,</span> <span class="kt">ToJSON</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="nf">main</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="nb">()</span>
+</span><span class='line'><span class="nf">main</span> <span class="ow">=</span> <span class="kr">do</span>
+</span><span class='line'>  <span class="kr">let</span> <span class="n">port</span> <span class="ow">=</span> <span class="mi">3000</span>
+</span><span class='line'>  <span class="n">putStrLn</span> <span class="o">$</span> <span class="s">&quot;Listening on port &quot;</span> <span class="o">++</span> <span class="n">show</span> <span class="n">port</span>
+</span><span class='line'>  <span class="n">run</span> <span class="n">port</span> <span class="n">app</span>
+</span><span class='line'>
+</span><span class='line'><span class="nf">app</span> <span class="ow">::</span> <span class="kt">Application</span>
+</span><span class='line'><span class="nf">app</span> <span class="n">req</span> <span class="n">res</span> <span class="ow">=</span>
+</span><span class='line'>  <span class="n">res</span> <span class="o">$</span> <span class="kr">case</span> <span class="n">rawPathInfo</span> <span class="n">req</span> <span class="kr">of</span>
+</span><span class='line'>    <span class="s">&quot;/&quot;</span> <span class="ow">-&gt;</span> <span class="n">helloRoute</span>
+</span><span class='line'>    <span class="kr">_</span>   <span class="ow">-&gt;</span> <span class="n">notFoundRoute</span>
+</span><span class='line'>
+</span><span class='line'><span class="nf">helloRoute</span> <span class="ow">::</span> <span class="kt">Response</span>
+</span><span class='line'><span class="nf">helloRoute</span> <span class="ow">=</span>
+</span><span class='line'>  <span class="n">responseLBS</span>
+</span><span class='line'>  <span class="n">status200</span>
+</span><span class='line'>  <span class="p">[(</span><span class="n">hContentType</span><span class="p">,</span> <span class="s">&quot;application/json&quot;</span><span class="p">)]</span>
+</span><span class='line'>  <span class="o">.</span> <span class="n">encode</span> <span class="o">$</span> <span class="kt">Hello</span> <span class="s">&quot;World&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nf">notFoundRoute</span> <span class="ow">::</span> <span class="kt">Response</span>
+</span><span class='line'><span class="nf">notFoundRoute</span> <span class="ow">=</span>
+</span><span class='line'>  <span class="n">responseLBS</span>
+</span><span class='line'>  <span class="n">status404</span>
+</span><span class='line'>  <span class="p">[(</span><span class="n">hContentType</span><span class="p">,</span> <span class="s">&quot;application/json&quot;</span><span class="p">)]</span>
+</span><span class='line'>  <span class="s">&quot;404 - Not Found&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>As you can see, the code has a <code>main</code> function that runs the <code>app</code>. This <code>app</code> just matches on routes, and responds with <code>HTTP 200 OK</code> on the root, or <code>HTTP 404 Not Found</code>. These are returned by different functions which returning <code>Response</code> types, and contain most of the hard parts of this code.</p>
+
+<p>Talking of hard parts, the thing I had the most difficultly with was:</p>
+
+<h3>Working out what <code>responseLBS</code> meant, and how to use it</h3>
+
+<p><code>responseLBS</code> means &ldquo;respond with a LazyByteString&rdquo;. LazyByteString seems to be the standard way of dealing with Strings in Warp. Their laziness, and serialisation format, apparently yields very high performance.</p>
+
+<p>However, using them is not so simple. Unless you convert from a normal String to a LazyByteString, you receive this compiler error:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Couldn't match expected type
+</span><span class='line'>‘bytestring-0.10.8.1:Data.ByteString.Internal.ByteString’
+</span><span class='line'>with actual type ‘[Char]’</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The <code>OverloadedStrings</code> pragma on the first line makes responseLBS usable, but providing a typeclass that automatically converts Strings to LazyByteStrings. It took me a while to realise this.</p>
+
+<h2>Summary</h2>
+
+<p>One of the best things about this code was the experience writing it. Once it compiled, it worked. It took a while to work out, but it was all helpfully guided by the compiler.</p>
+
+<p>I think I&rsquo;d probably benefit from an IDE for Haskell, as I spend much of my time in IntelliJ coding Scala. Discovering the necessary imports was the trickiest part of coding in the Atom Editor. If you have any recommendations, please send them my way!</p>
+
+<p>IDE&rsquo;s aside, if coding in Haskell is always this pleasant, I&rsquo;ll be very pleased!</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1393,113 +1542,6 @@ I&rsquo;m not convinced it is as nice as Clojure, but might be worth investigati
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/07/16/aggregation-services-in-nodejs/">Aggregation Services in Node.js</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-07-16T19:30:00+01:00" pubdate data-updated="true"></time>
-        
-         | <a href="/blog/2014/07/16/aggregation-services-in-nodejs/#disqus_thread">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><a href="http://cjwebb.github.io/blog/2014/03/26/aggregation-service-using-play-json/">My previous blog post</a> talked about building Aggregation Services using Play-JSON. In it, I mentioned that Aggregation Services using JavaScript might be quite nice. As JSON is native to JavaScript, you might expect manipulating JSON in JavaScript to be incredibly simple. And you would be correct!</p>
-
-<p>Below is the same functionality as last time, but with Node.js. To recap, we fetch an article <code>a1</code>, which contains a list of products ids <code>[s1, s2, s3]</code>. We load the article, and then have to fetch all the products it contains.</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">express</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;express&#39;</span><span class="p">),</span>
-</span><span class='line'>    <span class="nx">request</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;request&#39;</span><span class="p">),</span>
-</span><span class='line'>    <span class="nx">async</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;async&#39;</span><span class="p">),</span>
-</span><span class='line'>    <span class="nx">app</span> <span class="o">=</span> <span class="nx">express</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// where our json data lives</span>
-</span><span class='line'><span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="p">{</span>
-</span><span class='line'>  <span class="s2">&quot;s3&quot;</span><span class="o">:</span> <span class="s2">&quot;https://gist.githubusercontent.com/cjwebb/aef1f4fb2ca6d01f8b63/raw/0b6eb2c9b55a6720ccf41ee4ff8cca053cfda063/product-s3.json&quot;</span><span class="p">,</span>
-</span><span class='line'>  <span class="s2">&quot;s2&quot;</span><span class="o">:</span> <span class="s2">&quot;https://gist.githubusercontent.com/cjwebb/2d7fce88ce6594325bec/raw/fe025c2eafb8aeca953999f10663b83863a14d25/product-s2.json&quot;</span><span class="p">,</span>
-</span><span class='line'>  <span class="s2">&quot;s1&quot;</span><span class="o">:</span> <span class="s2">&quot;https://gist.githubusercontent.com/cjwebb/814c6337b0f04f1cfeba/raw/dc9b297a96c0bd8870436413e51efa2a36168308/product-s1.json&quot;</span><span class="p">,</span>
-</span><span class='line'>  <span class="s2">&quot;a1&quot;</span><span class="o">:</span> <span class="s2">&quot;https://gist.githubusercontent.com/cjwebb/c26c42e03ea8573efd4c/raw/75479f6f2d218ac6212e4f4b53fc7e30746228bd/article-a1.json&quot;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">var</span> <span class="nx">fetchProduct</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">,</span> <span class="nx">cb</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>  <span class="nx">request</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="nx">item</span><span class="p">],</span> <span class="p">{</span><span class="nx">json</span><span class="o">:</span><span class="kc">true</span><span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">body</span><span class="p">){</span>
-</span><span class='line'>      <span class="nx">cb</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">body</span><span class="p">);</span>
-</span><span class='line'>  <span class="p">});</span>
-</span><span class='line'><span class="p">};</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
-</span><span class='line'>  <span class="nx">request</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="s1">&#39;a1&#39;</span><span class="p">],</span> <span class="p">{</span><span class="nx">json</span><span class="o">:</span><span class="kc">true</span><span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">body</span><span class="p">){</span>
-</span><span class='line'>      <span class="nx">async</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">body</span><span class="p">[</span><span class="s1">&#39;product_list&#39;</span><span class="p">],</span> <span class="nx">fetchProduct</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">results</span><span class="p">){</span>
-</span><span class='line'>          <span class="c1">// mutate all the state!!  </span>
-</span><span class='line'>          <span class="nx">body</span><span class="p">[</span><span class="s1">&#39;product_list&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">results</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">n</span><span class="p">){</span> <span class="k">return</span> <span class="nx">n</span> <span class="p">});</span>  
-</span><span class='line'>          <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">body</span><span class="p">);</span>    
-</span><span class='line'>      <span class="p">});</span>
-</span><span class='line'>  <span class="p">});</span>
-</span><span class='line'><span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">listen</span><span class="p">(</span><span class="mi">3000</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Having worked a lot with Scala and Clojure recently, I keep forgetting that one can actually mutate variables! If the service is kept relatively small, the mutation should be forgiveable.</p>
-
-<p>This isn&rsquo;t production-ready code. Error handling is missing for the first HTTP request, and if <code>fetchProduct</code> returns an error, erroring products are filtered out. Hopefully though, the code gives a flavour of what an Aggregation service written in Node.js would look like.</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="2">&larr; Older</a>
@@ -1515,6 +1557,10 @@ I&rsquo;m not convinced it is as nice as Clojure, but might be worth investigati
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016/12/16/getting-started-with-haskells-warp/">Getting Started With Haskell's Warp</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016/06/28/learning-akka-streams/">Learning Akka Streams</a>
       </li>
     
@@ -1528,10 +1574,6 @@ I&rsquo;m not convinced it is as nice as Clojure, but might be worth investigati
     
       <li class="post">
         <a href="/blog/2015/06/23/play-framework-path-binders/">Using Play-Framework's PathBindable</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015/03/02/cassandra-ttl-is-per-column/">Cassandra TTL Is Per Column</a>
       </li>
     
   </ul>
